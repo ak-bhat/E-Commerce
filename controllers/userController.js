@@ -1,7 +1,19 @@
+const Product = require("../models/productsModel");
+const users = require("../models/userModel");
 const bcrypt = require("bcrypt");
 
 
-
+// Function to render the signup page
+const userSignupLoad = async (req, res) => {
+    try {
+      // Extract referral code from query parameters
+      let ref = req.query.ref;
+      // Render the login page with referral code
+      res.render("login", { ref });
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
 
 // Function to securely hash a password using bcrypt
@@ -243,3 +255,75 @@ const sendOTP = async (req, res) => {
     }
 };
 
+const loadShop = async (req, res) => {
+    try {
+      // Extract page and category from query parameters
+      const page = parseInt(req.query.page) || 1;
+      const pageSize = 6;
+  
+      // Fetch distinct categories from the Product model
+      const categories = await Product.distinct("category");
+  
+      // Extract selected category from query parameters
+      const selectedCategory = req.query.category;
+  
+      // Define query based on selected category
+      const query = { isListed: true };
+      if (selectedCategory && selectedCategory !== "all") {
+        query.category = selectedCategory;
+      }
+  
+      // Fetch products based on query and pagination
+      const products = await Product.find(query)
+        .skip((page - 1) * pageSize)
+        .limit(pageSize)
+        .populate("offer");
+  
+      // Count total products for pagination
+      const totalProducts = await Product.countDocuments(query);
+  
+      // Render the shop page with products, pagination, and categories
+      res.render("shop", {
+        products,
+        currentPage: page,
+        totalPages: Math.ceil(totalProducts / pageSize),
+        categories,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Internal Server Error");
+    }
+  };
+
+const loadProductDetails = async (req, res) => {
+    try {
+      // Check if user is logged in, otherwise redirect to home
+      if (!req.session || !req.session.user_id) {
+        return res.redirect("/");
+      }
+  
+      // Extract product id from route parameters
+      const productId = req.params.productId;
+      // Fetch product details from Product model
+      const product = await Product.findById(productId);
+  
+      // Render the productDetails page with product details
+      res.render("productDetails", { product });
+    } catch (error) {
+      console.log(error.message);
+      res.status(500).send("Internal Server Error");
+    }
+};
+
+module.exports = {
+    userSignupLoad,
+    insertUser,
+    verifyOTP,
+    resendOTP,
+    loadShop,
+    loadProductDetails,
+    getSignin,
+    checkUserValid,
+    sendOTP,
+    logout
+  };
