@@ -1,15 +1,15 @@
 const Product = require("../models/productsModel");
 const users = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const { sendMail, generateOTP } = require("../mail");
 
 
 // Function to render the signup page
 const userSignupLoad = async (req, res) => {
     try {
-      // Extract referral code from query parameters
-      let ref = req.query.ref;
-      // Render the login page with referral code
-      res.render("login", { ref });
+      // Render the login page 
+      
+      res.render("login");
     } catch (error) {
       console.log(error.message);
     }
@@ -32,15 +32,12 @@ const securePassword = async (password) => {
 const insertUser = async (req, res) => {
     try {
       // Extract user details from request body
-      const { firstname, secondname, email, mobile, password, referralCode } =
+      const { firstname, secondname, email, mobile, password } =
         req.body;
   
       // Generate a random OTP and send it via email
       const otp = generateOTP();
       sendMail(email, "OTP Verification", `Your OTP is: ${otp}`);
-  
-      // Generate a random referral code if not provided
-      const generatedReferralCode = referralCode || generateRandomReferralCode();
   
       // Store user details in session for verification
       req.session.userDetails = {
@@ -49,10 +46,20 @@ const insertUser = async (req, res) => {
         email,
         mobile,
         password: await securePassword(password),
-        otp,
-        referralCode: generatedReferralCode,
-        ref: req.query.ref,
+        otp
       };
+        // Create a new user in the database
+        const newUser = new users({
+          firstName: req.session.userDetails.firstname,
+          secondName: req.session.userDetails.secondname,
+          email: req.session.userDetails.email,
+          mobile: req.session.userDetails.mobile,
+          password: req.session.userDetails.password,
+          is_admin: 0
+        });
+  
+        // Save the new user to the database
+        await newUser.save();
   
       // Render the OTP verification page with the email
       res.render("verify-otp", { email });
@@ -83,43 +90,17 @@ const verifyOTP = async (req, res) => {
           email: userDetails.email,
           mobile: userDetails.mobile,
           password: userDetails.password,
-          is_admin: 0,
-          referralCode: userDetails.referralCode,
+          is_admin: 0
         });
   
         // Save the new user to the database
         await newUser.save();
   
-        // If user has a referral code, award bonus to referring and new user
-        if (userDetails.ref) {
-          const referringUser = await users.findOne({
-            referralCode: userDetails.ref,
-          });
-  
-          if (referringUser) {
-            referringUser.wallet.balance += 200;
-            referringUser.wallet.history.push({
-              type: "Credit",
-              amount: 200,
-              reason: "Referral bonus for new user registration",
-            });
-            await referringUser.save();
-  
-            newUser.wallet.balance += 100;
-            newUser.wallet.history.push({
-              type: "Credit",
-              amount: 100,
-              reason: "Referral bonus for using a referral link",
-            });
-            await newUser.save();
-          }
-        }
-  
         // Clear user details from session
         req.session.userDetails = null;
   
         // Render the OTP verification page with success message
-        return res.render("verify-otp", {
+        return res.render("singinuser", {
           email: email,
           successMessage: "User created successfully",
         });
@@ -140,17 +121,51 @@ const verifyOTP = async (req, res) => {
     }
 };
 
-// Function to log out the user by destroying the session
-const logout = async (req, res) => {
-    try {
-      // Destroy the session and redirect to the home page
-      req.session.destroy();
-      res.redirect("/");
-    } catch (error) {
-      console.log(error.message);
-      res.redirect("/");
+
+// Function to insert Google User
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.CLIENT_ID);
+
+// Function to insert Google user
+const insertGoogleUser = async (req, res) => {
+  try {
+    const token = req.body.token;
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub, email, name} = payload;
+    const [firstname, secondname] = name.split(' ');
+
+    // Check if user already exists
+    let user = await users.findOne({ email });
+    if (!user) {
+      // Create a new user in the database
+      user = new users({
+        firstName: firstname,
+        secondName: secondname || '',
+        email: email,
+        mobile: '', 
+        googleId: sub,
+        is_admin: 0,
+      });
+
+      // Save the new user to the database
+      await user.save();
     }
+
+    // Set session user
+    req.session.user = user;
+
+    // Redirect to the user profile or dashboard
+    res.redirect('/shop'); // Adjust the redirect URL as per your application
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
+
 
 // Function to resend OTP for email verification
 const resendOTP = async (req, res) => {
@@ -186,11 +201,24 @@ const resendOTP = async (req, res) => {
         .status(500)
         .json({ success: false, message: "Internal server error" });
     }
-  };
+};
+
+// Function to render the home page with products
+const userHome = async (req, res) => {
+    try {
+      // Fetch all products from the database and render the home page
+      const products = await Product.find({});
+      res.render("home", { products });
+    } catch (error) {
+      console.log(error.message);
+    }
+};
+
 
 // Function to render the signin page
 const getSignin = async (req, res) => {
     try {
+      
       res.render("signinuser");
     } catch (error) {
       console.log(error.message);
@@ -201,9 +229,10 @@ const getSignin = async (req, res) => {
 const checkUserValid = async (req, res) => {
     try {
       // Extract email and password from the request body
-      const { email, password } = req.body;
+      const email = req.body.email;
+      const password = req.body.password;
       // Find the customer with the provided email
-      const customer = await users.findOne({ email });
+      const customer = await users.findOne({ email: email });
   
       // Check if the customer exists
       if (!customer) {
@@ -219,7 +248,7 @@ const checkUserValid = async (req, res) => {
         } else {
           // Set user_id in session and redirect to home page
           req.session.user_id = customer._id;
-          return res.redirect("/");
+          res.redirect("/shop");
         }
       } else {
         res.render("signinuser", { message: "You are not verified" });
@@ -229,30 +258,16 @@ const checkUserValid = async (req, res) => {
     }
 };
 
-// Send OTP
-const sendOTP = async (req, res) => {
-    try {
-      // Extract email from the request body
-      const { email } = req.body;
-  
-      // Find user by email
-      const user = await users.findOne({ email });
-      if (!user) {
-        return res.render("forgotMail", { message: "Email not found." });
-      }
-  
-      // Generate OTP, send mail, and store details in session
-      const otp = generateOTP();
-      await sendMail(email, "Password Reset OTP", `Your OTP is: ${otp}`);
-      req.session.email = email;
-      req.session.otp = otp;
-  
-      // Redirect to forgotMailOTP page
-      res.redirect("/forgotMailOTP");
-    } catch (error) {
-      console.log(error.message);
-      res.render("forgotMail", { message: "Something went wrong." });
-    }
+// Function to log out the user by destroying the session
+const logout = async (req, res) => {
+  try {
+    // Destroy the session and redirect to the home page
+    req.session.destroy();
+    res.redirect("/");
+  } catch (error) {
+    console.log(error.message);
+    res.redirect("/");
+  }
 };
 
 const loadShop = async (req, res) => {
@@ -277,7 +292,6 @@ const loadShop = async (req, res) => {
       const products = await Product.find(query)
         .skip((page - 1) * pageSize)
         .limit(pageSize)
-        .populate("offer");
   
       // Count total products for pagination
       const totalProducts = await Product.countDocuments(query);
@@ -288,6 +302,7 @@ const loadShop = async (req, res) => {
         currentPage: page,
         totalPages: Math.ceil(totalProducts / pageSize),
         categories,
+
       });
     } catch (error) {
       console.error(error);
@@ -315,15 +330,35 @@ const loadProductDetails = async (req, res) => {
     }
 };
 
+const userProfile = async (req, res) => {
+  try {
+    const loggedInUserId = req.session.user_id;
+    const user = await users.findById(loggedInUserId);
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    // Render the user profile page with user details and addresses
+    res.render("userProfile", { user});
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+// Export all the defined functions
 module.exports = {
     userSignupLoad,
     insertUser,
+    insertGoogleUser,
+    userHome,
     verifyOTP,
     resendOTP,
     loadShop,
     loadProductDetails,
     getSignin,
     checkUserValid,
-    sendOTP,
-    logout
+    logout,
+    userProfile
   };

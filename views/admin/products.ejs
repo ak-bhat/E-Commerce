@@ -1,0 +1,136 @@
+<%- include('../layouts/adminHeader') %>
+<!-- Include the admin header layout -->
+
+<div class="main-panel">
+   <div class="content-wrapper">
+      <div class="card">
+         <!-- Display products in a card layout -->
+         <div class="card-body">
+            <h4 class="card-title">PRODUCTS</h4>
+            
+            <!-- Search input and button -->
+            <div class="col-md-12 grid-margin stretch-card">
+               <div class="card">
+                  <div class="input-group mb-3">
+                     <input type="text" class="form-control mr-2" placeholder="Search by name, category, or price"
+                        aria-label="Search products" aria-describedby="search-button" id="search-input"
+                        style="margin-right: 20px; color: white; opacity: 1" />
+                     <!-- Set text color -->
+                     <button class="btn btn-outline-secondary" type="button" id="search-button">
+                     Search
+                     </button>
+                  </div>
+                  
+                  <!-- Display the products in a table -->
+                  <div class="table-responsive">
+                     <table class="table table-bordered">
+                        <thead>
+                           <tr>
+                              <th>Name</th>
+                              <th>Images</th>
+                              <th>Category</th>
+                              <th>Stock</th>
+                              <th>Price</th>
+                              <th>Action</th>
+                              <th>Edit</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           <!-- Loop through each product and display its details -->
+                           <% Product.forEach((product)=> { %>
+                           <tr>
+                              <div>
+                                 <h2><%= product.name %></h2>
+                                 <p><%= product.description %></p>
+                                 <% if (product.image && product.image.length > 0) { %>
+                                   <% product.image.forEach(image => { %>
+                                     <img src="data:<%= image.contentType %>;base64,<%= image.data.toString('base64') %>"
+                                          alt="<%= product.name %> Image" />
+                                   <% }) %>
+                                 <% } else { %>
+                                   <p>No images available</p>
+                                 <% } %>
+                                 <p>Price: $<%= product.price %></p>
+                               </div>
+                             <% }) %>
+
+                              
+                              <td>
+                                 <!-- Form to delete the product -->
+                                 <form action="/admin/deleteProduct/<%= product._id %>" method="post">
+                                    <input type="hidden" name="product" value="<%= product._id %>" />
+                                    <!-- Button to list or unlist the product -->
+                                    <div class="btn-group" role="group" aria-label="Product Status">
+                                       <button type="submit"
+                                          class="btn <%= product.isListed ? 'btn-success' : 'btn-danger' %>">
+                                       <%= product.isListed ? 'List' : 'Unlist' %>
+                                       </button>
+                                    </div>
+                                 </form>
+                              </td>
+                              <td>
+                                 <!-- Button to edit the product -->
+                                 <a href="updateProduct/<%= product._id %>/Edit"
+                                    class="btn btn-outline-secondary">Edit</a>
+                              </td>
+                             
+                           </tr>
+                           
+                        </tbody>
+                     </table>
+                     
+                  </div>
+               </div>
+            </div>
+         </div>
+         
+               
+         <!-- Script for filtering products based on search criteria -->
+         <script>
+             document.addEventListener("DOMContentLoaded", function () {
+              document
+                .getElementById("search-button")
+                .addEventListener("click", function () {
+                  var searchText = document
+                    .getElementById("search-input")
+                    .value.toLowerCase()
+                    .trim();
+                  var rows = document.querySelectorAll("tbody tr");
+            
+                  rows.forEach(function (row) {
+                    var name = row
+                      .querySelector("td:nth-child(1)")
+                      .textContent.toLowerCase();
+                    var category = row
+                      .querySelector("td:nth-child(3)")
+                      .textContent.toLowerCase();
+                    var price = row
+                      .querySelector("td:nth-child(5)")
+                      .textContent.toLowerCase();
+            
+                    if (
+                      name.includes(searchText) ||
+                      category.includes(searchText) ||
+                      price.includes(searchText)
+                    ) {
+                      row.style.display = "";
+                    } else {
+                      row.style.display = "none";
+                    }
+                  });
+                });
+            });
+         </script>
+         
+         
+      </div>
+   </div>
+</div>
+</div>
+</div>
+<!-- main-panel ends -->
+</div>
+<!-- page-body-wrapper ends -->
+</div>
+<%- include('../layouts/adminFooter') %>
+<!-- Include the admin footer layout -->

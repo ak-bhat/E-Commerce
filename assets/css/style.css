@@ -196,14 +196,14 @@ h6,
 }
 
 a {
-    color: #c96;
+    color: white;
     text-decoration: none;
     transition: color 0.3s ease
 }
 
 a:hover,
 a:focus {
-    color: #bf8040;
+    color: white;
     text-decoration: none
 }
 
@@ -688,7 +688,7 @@ blockquote.text-white cite span {
 
 .header-top a:hover,
 .header-top a:focus {
-    color: #c96
+    color: white;
 }
 
 .header-top .container,
@@ -6153,7 +6153,7 @@ p {
 }
 
 .breadcrumb {
-    background-color: transparent;
+    background-color: #666;
     border-radius: 0;
     margin: 0;
     padding: 0
@@ -10797,7 +10797,7 @@ small.form-text {
 }
 
 .page-item-total {
-    color: #cccccc;
+    color: black;
     font-size: 1.4rem;
     font-weight: 400;
     margin-left: 1.2rem
@@ -10825,7 +10825,7 @@ small.form-text {
 
 .page-item.disabled .page-link {
     border-color: transparent;
-    color: #eaeaea
+    color: black;
 }
 
 .modal-backdrop {
