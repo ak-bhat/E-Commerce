@@ -158,7 +158,7 @@
                                  <span class="product-label label-primary">Out Of Stock</span>
                               <% } %>
                               <a href="/productDetails/<%= product._id %>">
-                                 <img src="data:<%= product.image[0].contentType %>;base64, <%= product.image[0].data.toString('base64') %>" alt="Product image" class="product-image">
+                                 <img src="data:<%= product.productImage[0].contentType %>;base64, <%= product.productImage[0].data.toString('base64') %>" alt="Product image" class="product-image">
                               </a>
                               <div class="product-action-vertical">
                                  <a href="#" class="btn-product-icon btn-wishlist btn-expandable addToWishlistBtn" data-prodId="<%= product._id %>">

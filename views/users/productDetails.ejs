@@ -3,8 +3,12 @@
    <nav aria-label="breadcrumb" class="breadcrumb-nav border-0 mb-0">
       <div class="container d-flex align-items-center">
          <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/">Home</a></li>
-            <li class="breadcrumb-item" ><a href="/shop">Products</a></li>
+            <% if (referrer && referrer.includes('/shop')) { %>
+               <li class="breadcrumb-item"><a href="/shop">Shop</a></li>
+             <% } else { %>
+               <li class="breadcrumb-item"><a href="/">Home</a></li>
+             <% } %>
+             <li class="breadcrumb-item"><a href="/products">Products</a></li>
          </ol>
          <nav class="product-pager ml-auto" aria-label="Product">
             <a class="product-pager-link product-pager-prev" href="#" aria-label="Previous" tabindex="-1">
@@ -30,7 +34,7 @@
                   <div class="product-gallery product-gallery-vertical">
                      <div class="row">
                         <figure class="product-main-image">
-                           <img id="product-zoom" src="data:<%= product.image[0].contentType %>;base64, <%= product.image[0].data.toString('base64') %>" data-zoom-image="data:<%= product.image[0].contentType %>;base64, <%= product.image[0].data.toString('base64') %>"  alt="product image"  />
+                           <img id="product-zoom" src="data:<%= product.productImage[0].contentType %>;base64, <%= product.productImage[0].data.toString('base64') %>" data-zoom-image="data:<%= product.productImage[0].contentType %>;base64, <%= product.productImage[0].data.toString('base64') %>"  alt="product image"  />
                            <!-- <div id="product-zoom-container" class="zoom">
                               </div> -->
                            <a href="#" id="btn-product-gallery" class="btn-product-gallery">
@@ -38,7 +42,7 @@
                            </a>
                         </figure>
                         <div id="product-zoom-gallery" class="product-image-gallery">
-                           <% product.image.forEach((img, index) => { %>
+                           <% product.productImage.forEach((img, index) => { %>
                            <div class="d-inline-block">
                               <a class="product-gallery-item <%= index === 0 ? 'active' : '' %>"
                                  href="#"
@@ -213,7 +217,7 @@
          <div class="col-6">
             <figure class="product-media">
                <a href="/productDetails/<%= product._id %>">
-               <img src="data:<%= product.image[0].contentType %>;base64, <%= product.image[0].data.toString('base64') %>" alt="Product image" class="product-image">
+               <img src="data:<%= product.productImage[0].contentType %>;base64, <%= product.productImage[0].data.toString('base64') %>" alt="Product image" class="product-image">
                </a>
             </figure>
             <!-- End .product-media -->
@@ -236,80 +240,7 @@
 </div>
 <!-- End .sticky-bar -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-   const addToCartBtn = document.querySelectorAll('.addToCartBtn')
-   addToCartBtn.forEach((btn)=>{
-   btn.addEventListener('click',addTocartFn)
-   })
-   
-   async function addTocartFn (){
-   try {
-      const productId = this.getAttribute('data-prodId')
-      
-      const response = await fetch ('/addToCart',{
-          method:'POST',
-          headers: {
-              'Content-Type':'application/json'
-          },
-          body: JSON.stringify({productId})
-      }
-      ) 
-   
-      const data = await response.json()
-      if(data.message === 'This product has already been added to your cart.' ){
-          Swal.fire({
-          icon: 'warning',
-          title: data.message,
-          // text: data.message,
-          timer:3000
-      });
-      }else if(data.message === 'Item successfully added to your cart.'){
-          Swal.fire({
-          icon: 'success',
-          title: data.message,
-          // text: data.message,
-          timer:3000
-      })
-      }else if(data.message === 'Cart created successfully.'){
-          Swal.fire({
-              icon: 'success',
-              title: data.message,
-              timer:3000
-          })
-      }
-   } catch (error) {
-      console.log('add to cart not wokring');
-   }
-   }
-   
-   
-   
-   const addToWishlistBtn = document.querySelectorAll('.addToWishlistBtn');
-   addToWishlistBtn.forEach((btn) => {
-   btn.addEventListener('click', addToWishlistFn);
-   });
-   
-   async function addToWishlistFn() {
-   try {
-      const productId = this.getAttribute('data-prodId');
-   
-      const response = await fetch('/addToWishlist', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ productId })
-      });
-   
-      const data = await response.json();
-      if (data.message) {
-          alert(data.message);
-      }
-   } catch (error) {
-      console.log('Add to wishlist not working');
-   }
-   }
-</script>
+
 <!-- jQuery (required for Elevate Zoom) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Elevate Zoom JavaScript -->

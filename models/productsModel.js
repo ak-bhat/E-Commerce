@@ -1,41 +1,40 @@
+const { name } = require("ejs");
 const mongoose = require("mongoose");
 
-const productsSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
+const productsSchema = mongoose.Schema({
+  name:{
+    type:String,
+    required:true
   },
-  quantity: {
-    type: Number,
-    required: true,
-  },
-  category: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  image: [
+  productImage: [
     {
-      data: {
-        type: Buffer,
-        required: true,
-      },
+      data:Buffer,
+        
       contentType: {
         type: String,
-        required: true,
+        default: null,
       },
     },
   ],
-  isListed: {
-    type: Boolean,
-    default: true,
+  category:{
+    type:String,
+    required:true
   },
-  price: {
-    type: Number,
-    required: true,
+  description:{
+    type:String,
+    required:true
+  },
+  price:{
+    type:Number,
+    required:true
+  },
+  quantity:{
+    type:Number,
+    required:true
+  },
+  isListed:{
+    type:Boolean,
+    default:true
   }
 });
 

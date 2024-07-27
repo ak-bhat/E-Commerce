@@ -1,6 +1,7 @@
 const isLogin = async (req, res, next) => {
     try {
-      if (req.session.user_id) {
+      console.log("hi")
+      if (req.session.user_id || req.session.passport.user) {
         next();
       } else {
         res.redirect("/signin");

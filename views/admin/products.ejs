@@ -6,8 +6,10 @@
       <div class="card">
          <!-- Display products in a card layout -->
          <div class="card-body">
-            <h4 class="card-title">PRODUCTS</h4>
-            
+            <h4 class="card-title" style="float: left;">PRODUCTS</h4>
+            <a href="/admin/addProduct"><button class="btn btn-outline-secondary" type="button" style="float: right;">
+               Add Product
+               </button></a>
             <!-- Search input and button -->
             <div class="col-md-12 grid-margin stretch-card">
                <div class="card">
@@ -40,41 +42,42 @@
                            <% Product.forEach((product)=> { %>
                            <tr>
                               <div>
-                                 <h2><%= product.name %></h2>
-                                 <p><%= product.description %></p>
-                                 <% if (product.image && product.image.length > 0) { %>
-                                   <% product.image.forEach(image => { %>
-                                     <img src="data:<%= image.contentType %>;base64,<%= image.data.toString('base64') %>"
-                                          alt="<%= product.name %> Image" />
+                                 <td><p><%= product.name %></p></td>
+                                 <td>
+                                 <% if (product.productImage && product.productImage.length > 0) { %>
+                                   <% product.productImage.forEach(image => { %>
+                                    <img src="data:<%= image.contentType %>;base64,<%= image.data.toString('base64') %>"
+                                    alt="<%= product.name %> Image" />
                                    <% }) %>
                                  <% } else { %>
                                    <p>No images available</p>
                                  <% } %>
-                                 <p>Price: $<%= product.price %></p>
+                                 </td>
+                                 <td><p><%= product.category %></p></td>
+                                 <td><p><%= product.quantity %></p></td>
+                                 <td><p>₹<%= product.price %></p></td>
+                                 <td>
+                                    <!-- Form to delete the product -->
+                                    <form action="/admin/deleteProduct/<%= product._id %>" method="post">
+                                       <input type="hidden" name="product" value="<%= product._id %>" />
+                                       <!-- Button to list or unlist the product -->
+                                       <div class="btn-group" role="group" aria-label="Product Status">
+                                          <button type="submit"
+                                             class="btn <%= product.isListed ? 'btn-success' : 'btn-danger' %>">
+                                          <%= product.isListed ? 'List' : 'Unlist' %>
+                                          </button>
+                                       </div>
+                                    </form>
+                                 </td>
+                                 <td>
+                                    <!-- Button to edit the product -->
+                                    <a href="updateProduct/<%= product._id %>/Edit"
+                                       class="btn btn-outline-secondary">Edit</a>
+                                 </td>
+                                 
                                </div>
+                               </tr>
                              <% }) %>
-
-                              
-                              <td>
-                                 <!-- Form to delete the product -->
-                                 <form action="/admin/deleteProduct/<%= product._id %>" method="post">
-                                    <input type="hidden" name="product" value="<%= product._id %>" />
-                                    <!-- Button to list or unlist the product -->
-                                    <div class="btn-group" role="group" aria-label="Product Status">
-                                       <button type="submit"
-                                          class="btn <%= product.isListed ? 'btn-success' : 'btn-danger' %>">
-                                       <%= product.isListed ? 'List' : 'Unlist' %>
-                                       </button>
-                                    </div>
-                                 </form>
-                              </td>
-                              <td>
-                                 <!-- Button to edit the product -->
-                                 <a href="updateProduct/<%= product._id %>/Edit"
-                                    class="btn btn-outline-secondary">Edit</a>
-                              </td>
-                             
-                           </tr>
                            
                         </tbody>
                      </table>

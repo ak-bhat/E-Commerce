@@ -47,14 +47,14 @@
                   </td>
                   <td>
                     <!-- User Block/Unblock Form -->
-                    <form action="/admin/block-user" method="POST">
+                    <form  id="block-unblock-form-<%= user._id%>" action="/admin/block-user" method="POST">
                       <input type="hidden" name="userId" value="<%= user._id %>" />
                       <% if (user.is_blocked === 0) { %>
-                      <button type="submit" class="btn btn-block btn-danger btn-block-unblock">
+                      <button type="button" class="btn btn-block btn-danger btn-block-unblock" onclick="confirmBlock('<%= user._id %>')">
                         Block
                       </button>
                       <% } else { %>
-                      <button type="submit" class="btn btn-block btn-success btn-block-unblock">
+                      <button type="submit" class="btn btn-block btn-success btn-block-unblock" >
                         Unblock
                       </button>
                       <% } %>
@@ -70,6 +70,7 @@
     </div>
 
     <!-- Search Script -->
+
     <script>
       document
         .getElementById("search-button")
@@ -101,6 +102,25 @@
             }
           });
         });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      function confirmBlock(userId) {
+        
+          Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you really want to block this user?",
+            icon: 'warning',
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: 'Yes, block them!'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              document.getElementById('block-unblock-form-' + userId).submit();
+            }
+          });
+        }; 
     </script>
 
   </div>

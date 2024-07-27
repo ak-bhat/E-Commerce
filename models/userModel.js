@@ -7,11 +7,11 @@ const UserSchema = new mongoose.Schema({
   },
   secondName: {
     type: String,
-    required: true,
+    required: false,
   },
   password: {
     type: String,
-    required: true,
+    required: false,
   },
   email: {
     type: String,
@@ -19,11 +19,17 @@ const UserSchema = new mongoose.Schema({
   },
   mobile: {
     type: Number,
-    required: true,
+    required: false,
+    sparse:true,
+    default:null
+  },
+  googleId:{
+    type:String,
+    unique:true
   },
   is_admin: {
     type: Number,
-    required: true,
+    default: 0,
   },
   is_verified: {
     type: Number,

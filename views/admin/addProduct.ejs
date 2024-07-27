@@ -222,11 +222,11 @@
                               <div class="card-body">
                                  <h4 class="card-title">ADD PRODUCTS</h4>
                                  <!-- Form for adding products -->
-                                 <form action="/admin/products" method="post" id="myForm" class="forms-sample" enctype="multipart/form-data">
+                                 <form action="/admin/addProduct" id="myForm" method="post" class="forms-sample" enctype="multipart/form-data">
                                     <!-- Product name input -->
                                     <div class="form-group">
                                        <label for="name">Name</label>
-                                       <input type="text" class="form-control" id="exampleInputName1" placeholder="Name" name="name" style="color: white" />
+                                       <input type="text" class="form-control" id="exampleInputName1" placeholder="Name" name="name" style="color: white" required />
                                     </div>
                                     <!-- Row for size and quantity selection -->
                                     <div class="row">
@@ -235,18 +235,7 @@
                                        <div class="col-md-6">
                                           <div class="form-group">
                                              <label for="quantity">Stock</label>
-                                             <select class="form-control" id="quantitySelect" name="quantity" style="color: white">
-                                                <option>1</option>
-                                                <option>2</option>
-                                                <option>3</option>
-                                                <option>4</option>
-                                                <option>5</option>
-                                                <option>6</option>
-                                                <option>7</option>
-                                                <option>8</option>
-                                                <option>9</option>
-                                                <option>10</option>
-                                             </select>
+                                             <input type="text" class="form-control" id="quantitySelect" placeholder="Enter Quantity > 0" name="quantity" style="color: white; ::placeholder { color: white; opacity: 1;  }" min="1" required />
                                           </div>
                                        </div>
                                     </div>
@@ -256,30 +245,32 @@
                                           <div class="form-group">
                                              <label for="category">Category</label>
                                              <select class="form-control" id="exampleSelectCategory" name="category" style="color: white">
-                                                 <% categories.forEach(category => { %>
-                                                     <option><%= category.categoryName %></option>
-                                                 <% }) %>
-                                             </select>
+                                                <% categories.forEach(category => { %>
+                                                  <% if (category.isListed) { %>
+                                                    <option><%= category.categoryName %></option>
+                                                  <% } %>
+                                                <% }) %>
+                                              </select>
                                           </div>
                                        </div>
                                     </div>
                                     <!-- Description textarea -->
                                     <div class="form-group">
                                        <label for="description">Description</label>
-                                       <textarea class="form-control" id="exampleTextarea1" rows="6" name="description" style="color: white"></textarea>
+                                       <textarea class="form-control" id="exampleTextarea1" rows="6" name="description" style="color: white" required></textarea>
                                     </div>
                                     <!-- Image upload input -->
                                     <div class="form-group">
                                        <label>Images Upload (Required 3)</label>
                                        <div class="input-group col-md-12">
-                                          <input type="file" id="imageUpload" name="images" multiple class="form-control file-upload-info" required />
+                                          <input type="file" id="imageUpload" name="productImage" multiple class="form-control file-upload-info" required />
                                        </div>
                                        <div id="imagePreview" class="mt-4 mb-2 d-flex flex-wrap" style="max-width: 500px"></div>
                                     </div>
                                     <!-- Product price input -->
                                     <div class="form-group">
                                        <label for="price">Product Price</label>
-                                       <input type="text" class="form-control" id="productPrice" placeholder="Enter Price" aria-describedby="priceHelp" name="price" style="color: white; ::placeholder { color: white; opacity: 1; }" />
+                                       <input type="text" class="form-control" id="productPrice" placeholder="Enter Price" aria-describedby="priceHelp" name="price" style="color: white; ::placeholder { color: white; opacity: 1; }" required/>
                                        <small id="priceHelp" class="form-text text-muted">Enter the price of the product.</small>
                                     </div>
                                     <!-- Submit and Cancel buttons -->
@@ -299,6 +290,40 @@
                <!-- End content wrapper -->
                <!-- Script for handling image cropping and form submission -->
                <script>
+//                   $(document).ready(function() {
+//                      if (window.File && window.FileList && window.FileReader) {
+//                          $("#imageUpload").on("change", function(e) {
+//                            var files = e.target.files,
+//                            filesLength = files.length;
+//                         for (var i = 0; i < filesLength; i++) {
+//                         var f = files[i]
+//                         var fileReader = new FileReader();
+//                         fileReader.onload = (function(e) {
+//                         var file = e.target;
+//                         $("<span class=\"pip\">" +
+//                            "<img class=\"imageThumb\" src=\"" + e.target.result + "\" title=\"" + file.name + "\"/>" +
+//                            "<br/><span class=\"remove\">Remove image</span>" +
+//                            "</span>").insertAfter("#files");
+//                         $(".remove").click(function(){
+//                            $(this).parent(".pip").remove();
+//                         });
+//                         });
+//                      fileReader.readAsDataURL(f);
+//       }
+//       console.log(files);
+//     });
+//   } else {
+//     alert("Your browser doesn't support to File API")
+//   }
+// });
+
+
+
+
+
+
+
+
                   document.addEventListener("DOMContentLoaded", function () {
                     const myForm = document.getElementById("myForm");
                     const imageUploadInput = document.getElementById("imageUpload");
@@ -307,7 +332,6 @@
                   
                     imageUploadInput.addEventListener("change", function () {
                       imagePreviewContainer.innerHTML = "";
-                      croppers = []; // Reset croppers array
                 
                       const files = this.files;
                 
@@ -317,8 +341,8 @@
                         return;
                       }
                 
-                      for (let i = 0; i < files.length; i++) {
-                        
+                       // Iterate through selected files and create cropper instances
+                       for (let i = 0; i < files.length; i++) {
                         const file = files[i];
                         const reader = new FileReader();
                 
@@ -348,51 +372,57 @@
                         reader.readAsDataURL(file);
                       }
                     });
+
+                    
                 
-                    myForm.addEventListener("submit", function (event) {
-                      event.preventDefault();
+                  //   myForm.addEventListener("submit", function (event) {
+                  //     event.preventDefault();
                 
-                      const formData = new FormData(this);
+                  //     const formData = new FormData(this);
                 
-                      croppers.forEach((cropper, index) => {
-                        const croppedCanvas = cropper.getCroppedCanvas();
-                        if (croppedCanvas) {
-                          const croppedDataUrl = croppedCanvas.toDataURL("image/png");
-                          const blob = dataURItoBlob(croppedDataUrl);
-                          formData.append(`images`, blob, `cropped_image_${index}.png`);
-                        }
-                      });
-                
-                      fetch("/admin/addProduct", {
-                        method: "POST",
-                        body: formData,
-                      })
-                      .then((response) => response.json())
-                      .then((data) => {
-                        if (data.success) {
-                          window.location.href = "/admin/addProduct";
-                        } else {
-                          console.error("Error:", data.message);
-                        }
-                      })
-                      .catch((error) => {
-                        console.error("Error:", error);
-                        alert("An error occurred while uploading the images.");
-                      });
-                    });
-                
-                    function dataURItoBlob(dataURI) {
-                      const byteString = atob(dataURI.split(",")[1]);
-                      const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
-                      const ab = new ArrayBuffer(byteString.length);
-                      const ia = new Uint8Array(ab);
-                      for (let i = 0; i < byteString.length; i++) {
-                        ia[i] = byteString.charCodeAt(i);
-                      }
-                      return new Blob([ab], { type: mimeString });
-                    }
+                  //     croppers.forEach((cropper, index) => {
+                  //       const croppedDataUrl = cropper.getCroppedCanvas().toDataURL("image/png");
+                  //       const blob = dataURItoBlob(croppedDataUrl);
+                  
+                  //       formData.append(`productImage`, blob, `cropped_image_${index}.png`);
+                  //     });
+
+                  //     fetch("/admin/addProduct", {
+                  //       method: "POST",
+                  //       body: formData,
+                  //     })
+                  //       .then((response) => {
+                  //         if (response.status === 200) {
+                  //           window.location.href = "/admin/products";
+                  //         }
+                  //       })
+                  //       .catch((error) => {
+                  //         window.location.reload();
+                  //       });
+                  //   });
+
+                  //   function dataURItoBlob(dataURI) {
+                  //     const byteString = atob(dataURI.split(",")[1]);
+                  //     const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
+                  //     const ab = new ArrayBuffer(byteString.length);
+                  //     const ia = new Uint8Array(ab);
+                  //     for (let i = 0; i < byteString.length; i++) {
+                  //       ia[i] = byteString.charCodeAt(i);
+                  //     }
+                  //     return new Blob([ab], { type: mimeString });
+                  //   }
                   });
                 </script>
+
+                  <script>
+                     document.getElementById('quantitySelect').addEventListener('input', function() {
+                     if (this.value < 1) {
+                        this.setCustomValidity('Stock must be greater than 0');
+                     } else {
+                        this.setCustomValidity('');
+                     }
+                     });
+                  </script>
                 
                <!-- End script -->
             </div>
