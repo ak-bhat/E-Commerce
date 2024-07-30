@@ -51,8 +51,8 @@
                                  </td>
                                  <td>
                                     <% order.products.forEach(product => { %>
-                                    <% if (product.productId && product.productId.image && product.productId.image.length > 0) { %>
-                                    <img src="data:<%= product.productId.image[0].contentType %>;base64,<%= product.productId.image[0].data.toString('base64') %>" alt="Product Image" width="100">
+                                    <% if (product.productId && product.productId.productImage && product.productId.productImage.length > 0) { %>
+                                    <img src="data:<%= product.productId.productImage[0].contentType %>;base64,<%= product.productId.productImage[0].data.toString('base64') %>" alt="Product Image" width="100">
                                     <% } else { %>
                                     <p>No Image Available</p>
                                     <% } %>

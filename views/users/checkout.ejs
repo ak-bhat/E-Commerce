@@ -1,359 +1,323 @@
-
 <%- include('../layouts/header') %>
-        <main class="main">
-            <div class="page-header text-center" style="background-image: url('assets/images/page-header-bg.jpg')">
+    <main class="main">
+        <div class="page-header text-center" style="background-image: url('assets/images/page-header-bg.jpg')">
+            <div class="container">
+                <h1 class="page-title">Checkout</h1>
+            </div><!-- End .container -->
+        </div><!-- End .page-header -->
+        <nav aria-label="breadcrumb" class="breadcrumb-nav">
+            <div class="container">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item"><a href="#">Shop</a></li>
+                    <li class="breadcrumb-item"><a href="#">Cart</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+                </ol>
+            </div><!-- End .container -->
+        </nav><!-- End .breadcrumb-nav -->
+
+
+
+
+        <div class="page-content">
+            <div class="checkout">
                 <div class="container">
-                    <h1 class="page-title">Checkout</h1>
-                </div><!-- End .container -->
-            </div><!-- End .page-header -->
-            <nav aria-label="breadcrumb" class="breadcrumb-nav">
-                <div class="container">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-                        <li class="breadcrumb-item"><a href="#">Shop</a></li>
-                        <li class="breadcrumb-item"><a href="#">Cart</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Checkout</li>
-                    </ol>
-                </div><!-- End .container -->
-            </nav><!-- End .breadcrumb-nav -->
+                    <!-- <label for="couponCode" class="text-truncate">Tap below to check for the availability of coupons</label> -->
 
 
+                    <form action="/placeOrder" method="POST">
+                        <div class="row">
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <div class="page-content">
-                <div class="checkout">
-                    <div class="container">
-                        <label for="couponCode" class="text-truncate">Tap below to check for the availability of coupons</label>
-
-
-                        <form action="/placeOrder" method="POST">
-                            <div class="row">
-
-
-                                <div class="col-lg-9">
-                                    <div class="col-lg-9" style="margin-left: -10px;">
-                                        <h2 class="checkout-title">Choose Shipping Address</h2>
-                                        <% if (addresses && addresses.length> 0) { %>
-                                            <form action="#" method="POST">
-                                                <% addresses.forEach((address, index)=> { %>
-                                                    <div class="card card-dashboard">
-                                                        <div class=" card-body">
-                                                            <label>
-                                                                <input class='addressIp' type="radio"
-                                                                    name="selectedAddress" value="<%= address._id %>">
-                                                                <h3 class="card-title">Shipping Address <%= index + 1 %>
-                                                                </h3>
-                                                                <%= address.firstName %>
-                                                                    <%= address.lastName %><br>
-                                                                        <%= address.hcName %><br>
-                                                                            <%= address.streetName %><br>
-                                                                                <%= address.city %>, <%= address.state
-                                                                                        %>
-                                                                                        <%= address.pincode %><br>
-                                                                                            <%= address.mobile %><br>
-                                                                                                <%= address.email %><br>
-                                                            </label>
-                                                        </div>
+                            <div class="col-lg-9">
+                                <div class="col-lg-9" style="margin-left: -10px;">
+                                    <h2 class="checkout-title">Choose Shipping Address</h2>
+                                    <% if (addresses && addresses.length> 0) { %>
+                                        <form action="#" method="POST">
+                                            <% addresses.forEach((address, index)=> { %>
+                                                <div class="card card-dashboard">
+                                                    <div class=" card-body">
+                                                        <label>
+                                                            <input class='addressIp' type="radio" name="selectedAddress"
+                                                                value="<%= address._id %>">
+                                                            <h3 class="card-title">Shipping Address <%= index + 1 %>
+                                                            </h3>
+                                                            <%= address.firstName %>
+                                                                <%= address.lastName %><br>
+                                                                    <%= address.hcName %><br>
+                                                                        <%= address.streetName %><br>
+                                                                            <%= address.city %>, <%= address.state %>
+                                                                                    <%= address.pincode %><br>
+                                                                                        <%= address.mobile %><br>
+                                                                                            <%= address.email %><br>
+                                                        </label>
                                                     </div>
-                                                    <% }); %>
-
-                                            </form>
-                                            <% } else { %>
-                                                <p>No addresses found. <a href="#">Add Address</a></p>
-                                                <% } %>
-
-                                    </div>
-
-
-                                    <div>
-                                        <form action="/addShippingDetails" method="post">
-                                            <h2 class="checkout-title">Add Shipping Details</h2>
-
-
-                                            <div class="row">
-
-                                                <div class="col">
-                                                    <label>First Name *</label>
-                                                    <input type="text" class="form-control" id="firstNameInput"
-                                                        name="firstName">
-
                                                 </div>
+                                                <% }); %>
 
-                                                <div class="col">
-                                                    <label>Last Name *</label>
-                                                    <input type="text" class="form-control" id="lastNameInput"
-                                                        name="lastName">
-                                                </div>
-                                            </div>
+                                        </form>
+                                        <% } else { %>
+                                            <p>No addresses found. <a href="#">Add Address</a></p>
+                                            <% } %>
 
-                                            <label>House name or Company name *</label>
-                                            <input type="text" class="form-control" id="displayNameInput" name="hcName">
-
-                                            <div class="row">
-                                                <div class="col">
-                                                    <label>Street name *</label>
-                                                    <input type="text" class="form-control" id="streetInput"
-                                                        name="streetName">
-                                                </div>
-
-                                                <div class="col">
-                                                    <label>City *</label>
-                                                    <input type="text" class="form-control" id="cityInput" name="city">
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col">
-                                                    <label>State *</label>
-                                                    <input type="text" class="form-control" id="stateInput"
-                                                        name="state">
-                                                </div>
-                                                <div class="col">
-                                                    <label>Pincode *</label>
-                                                    <input type="tel" class="form-control" id="pincodeInput"
-                                                        name="pincode">
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col">
-                                                    <label>Email address *</label>
-                                                    <input type="email" class="form-control" id="emailInput"
-                                                        name="email">
-                                                </div>
-
-                                                <div class="col">
-                                                    <label>Mobile Number *</label>
-                                                    <input type="tel" class="form-control" id="mobileInput"
-                                                        name="mobile">
-                                                </div>
-                                            </div>
-
-                                            <button type="submit" class="btn btn-outline-primary-2"
-                                                style="margin-top: 10px;">
-                                                <span>ADD</span>
-                                                <i class="icon-long-arrow-right"></i>
-                                            </button>
-                                    </div>
-                        </form>
-
-
-
-
-
-                    </div>
-
-
-
-                  
-
-                    <aside class="col-lg-3">
-                        <div class="summary">
-                            <h3 class="summary-title">Your Order</h3>
-
-                            <table class="table table-summary">
-                                <thead >
-                                    <tr>
-                                        <th>Product</th>
-                                        <th>Total</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <% cartItems.forEach(cartItem => { %>
-                                        <tr>
-                                            <td>
-                                                <a href="#"><%= cartItem.product.name %></a>
-                                            </td>
-                                                <td>
-                                                    <%= (cartItem.count * cartItem.product.price).toFixed(2) %>
-                                                </td>
-                                        </tr>
-                                       
-                                    <% }); %>
-                                     <tr id="couponRow" style="color: red; display: none;">
-                                            <td id="head"></td>
-                                        <td id="discount"></td>
-                                        </tr>
-                              
-                                    <tr class="summary-subtotal ">
-                                        <td>Subtotal</td>
-                                        <td id="sub">
-                                            <%= subtotal.toFixed(2) %>
-                                        </td>
-                                    </tr>
-                                   
-                                    <tr class="summary-total">
-                                        <td>Total:</td>
-                                        <td id="sub2">
-                                            <%= subtotal.toFixed(2) %>
-                                        </td>
-                                    </tr>
-                                   
-                                </tbody>
-
-
-
-
-                            </table>
-
-
-                            <div class="accordion-summary" id="accordion-payment">
-                                <h3 class="summary-title">Payment Methods</h3>
-                            
-
-                                <!-- Cash on delivery -->
-                                <div class="card">
-                                    <div class="card-header" id="heading-3">
-                                        <h2 class="card-title">
-                                            <label>
-                                                <input type="radio" name="paymentMethod" value="cashOnDelivery">
-                                                Cash on delivery
-                                            </label>
-                                        </h2>
-                                    </div>
                                 </div>
-                
+
+
+                                <div>
+                                    <form action="/addShippingDetails" method="post">
+                                        <h2 class="checkout-title">Add Shipping Details</h2>
+
+
+                                        <div class="row">
+
+                                            <div class="col">
+                                                <label>First Name *</label>
+                                                <input type="text" class="form-control" id="firstNameInput"
+                                                    name="firstName" style="border: .1rem dashed #d7d7d7;">
+
+                                            </div>
+
+                                            <div class="col">
+                                                <label>Last Name *</label>
+                                                <input type="text" class="form-control" id="lastNameInput"
+                                                    name="lastName" style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+                                        </div>
+
+                                        <label>House name or Company name *</label>
+                                        <input type="text" class="form-control" id="displayNameInput" name="hcName"
+                                            style="border: .1rem dashed #d7d7d7;">
+
+                                        <div class="row">
+                                            <div class="col">
+                                                <label>Street name *</label>
+                                                <input type="text" class="form-control" id="streetInput"
+                                                    name="streetName" style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+
+                                            <div class="col">
+                                                <label>City *</label>
+                                                <input type="text" class="form-control" id="cityInput" name="city"
+                                                    style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col">
+                                                <label>State *</label>
+                                                <input type="text" class="form-control" id="stateInput" name="state"
+                                                    style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+                                            <div class="col">
+                                                <label>Pincode *</label>
+                                                <input type="tel" class="form-control" id="pincodeInput" name="pincode"
+                                                    style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col">
+                                                <label>Email address *</label>
+                                                <input type="email" class="form-control" id="emailInput" name="email"
+                                                    style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+
+                                            <div class="col">
+                                                <label>Mobile Number *</label>
+                                                <input type="tel" class="form-control" id="mobileInput" name="mobile"
+                                                    style="border: .1rem dashed #d7d7d7;">
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-outline-primary-2"
+                                            style="margin-top: 10px;">
+                                            <span>ADD</span>
+                                            <i class="icon-long-arrow-right"></i>
+                                        </button>
+                                    </form>    
+                                </div>
                             </div>
 
 
-                            <button type="button" id="placeOrder" class="btn btn-outline-primary-2 btn-order btn-block"
-                                style="margin-top: 30px;" data-user-id="<%= user_id %>">
-                                <span>PLACE ORDER</span>
-                            </button>
+
+
+
+                
+
+
+
+
+
+                            <aside class="col-lg-3">
+                                <div class="summary">
+                                    <h3 class="summary-title">Your Order</h3>
+
+                                    <table class="table table-summary">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            <% cartItems.forEach(cartItem=> { %>
+                                                <tr>
+                                                    <td>
+                                                        <a href="#">
+                                                            <%= cartItem.product.name %>
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <%= (cartItem.count * cartItem.product.price).toFixed(2) %>
+                                                    </td>
+                                                </tr>
+
+                                                <% }); %>
+                                                    <tr id="couponRow" style="color: red; display: none;">
+                                                        <td id="head"></td>
+                                                        <td id="discount"></td>
+                                                    </tr>
+
+                                                    <tr class="summary-subtotal ">
+                                                        <td>Subtotal</td>
+                                                        <td id="sub">
+                                                            <%= subtotal.toFixed(2) %>
+                                                        </td>
+                                                    </tr>
+
+                                                    <tr class="summary-total">
+                                                        <td>Total:</td>
+                                                        <td id="sub2">
+                                                            <%= subtotal.toFixed(2) %>
+                                                        </td>
+                                                    </tr>
+
+                                        </tbody>
+
+
+
+
+                                    </table>
+
+
+                                    <div class="accordion-summary" id="accordion-payment">
+                                        <h3 class="summary-title">Payment Methods</h3>
+
+
+                                        <!-- Cash on delivery -->
+                                        <div class="card">
+                                            <div class="card-header" id="heading-3">
+                                                <h2 class="card-title">
+                                                    <label>
+                                                        <input type="radio" name="paymentMethod" value="cashOnDelivery">
+                                                        Cash on delivery
+                                                    </label>
+                                                </h2>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+
+                                    <button type="submit" id="placeOrder" class="btn btn-outline-primary-2 btn-order btn-block"
+                                        style="margin-top: 30px;" data-user-id="<%= user_id %>">
+                                        <span>PLACE ORDER</span>
+                                    </button>
+                                </div>
+                            </aside>
                         </div>
-                    </aside>
-                </div>
-                </form>
-            </div>
-    </div>
-    </div>
+                    </form>
+        </div>
+        </div>
+        </div>
     </main>
 
-
-    <!-- Wallet -->
-    <!-- <div class="card">
-                                                <div class="card-header" id="heading-5">
-                                                    <h2 class="card-title">
-                                                        <label>
-                                                            <input type="radio" name="paymentMethod" value="wallet">
-                                                            Wallet
-                                                        </label>
-                                                    </h2>
-                                                </div>
-                                            </div> -->
 
     </div>
     <button id="scroll-top" title="Back to Top"><i class="icon-arrow-up"></i></button>
 
-   
+
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 
     <!-- Include SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
 
 
 
 
 
-<script>
-    $(document).ready(function () {
-        const userId = $('#placeOrder').data('user-id');
+    <script>
+        $(document).ready(function () {
+            const userId = $('#placeOrder').data('user-id');
 
-        document.getElementById('placeOrder').onclick = async function (e) {
-            let checkedAddress = false;
-            let selectedAddress;
-            let addressInputs = document.querySelectorAll('.addressIp');
-            addressInputs.forEach((input) => {
-                if (input.checked) {
-                    checkedAddress = true;
-                    selectedAddress = input.value;
+            document.getElementById('placeOrder').onclick = async function (e) {
+                let checkedAddress = false;
+                let selectedAddress;
+                let addressInputs = document.querySelectorAll('.addressIp');
+                addressInputs.forEach((input) => {
+                    if (input.checked) {
+                        checkedAddress = true;
+                        selectedAddress = input.value;
+                    }
+                });
+
+
+                let selectedPaymentMethod = $('input[name="paymentMethod"]:checked').val();
+                // Get the total value
+                let totalValue = parseFloat($('#sub2').text());
+
+                // Check if the total is 0 and disable the button
+                if (totalValue === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Oops...',
+                        text: 'Cannot place an order with a total of 0.',
+                    });
+                    return;
                 }
-            });
+
+                if (!checkedAddress) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Oops...',
+                        text: 'Please select an address to place the order.',
+                    });
+                    return;
+                }
+
+                if (!selectedPaymentMethod) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Oops...',
+                        text: 'Please select a payment method to continue.',
+                    });
+                    return;
+                }
 
 
-            let selectedPaymentMethod = $('input[name="paymentMethod"]:checked').val();
-            // Get the total value
-            let totalValue = parseFloat($('#sub2').text());
-
-            // Check if the total is 0 and disable the button
-            if (totalValue === 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Oops...',
-                    text: 'Cannot place an order with a total of 0.',
+                let paymentMethod = 'Cash on Delivery';
+                const response = await fetch('/placeOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ paymentMethod, selectedAddress })
                 });
-                return;
-            }
 
-            if (!checkedAddress) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Oops...',
-                    text: 'Please select an address to place the order.',
-                });
-                return;
-            }
+                const data = await response.json();
 
-            if (!selectedPaymentMethod) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Oops...',
-                    text: 'Please select a payment method to continue.',
-                });
-                return;
-            }
+                if (data.orderPlaced) {
+                    window.location.href = '/loadOrderPlaced';
+                }
 
-            
-        let paymentMethod = 'Cash on Delivery';
-        const response = await fetch('/placeOrder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ paymentMethod, selectedAddress})
+            };
         });
 
-        const data = await response.json();
-       
-        if (data.orderPlaced) {
-            window.location.href = '/loadOrderPlaced';
-        }
-    
-  };
-});
-
-</script>
+    </script>
 
 
 
@@ -374,5 +338,5 @@
         });
     </script>
 
- 
-<%- include('../layouts/footer') %>
+
+    <%- include('../layouts/footer') %>

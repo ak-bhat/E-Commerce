@@ -11,11 +11,6 @@ const orderSchema = new mongoose.Schema({
     ref: "address",
     required: true,
   },
-  coupon: {
-    type: mongoose.Schema.Types.Mixed,
-    ref: "Coupon",
-    required: false,
-  },
   products: [
     {
       productId: {

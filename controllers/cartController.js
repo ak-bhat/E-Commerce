@@ -99,6 +99,15 @@ const updateProductCountFn = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    if (count > 5) {
+      return res
+        .status(400)
+        .json({
+          message: "You have reached maximum Count",
+          
+        });
+    }
+
     if (count > actualProduct.quantity) {
       return res
         .status(400)

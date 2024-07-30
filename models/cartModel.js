@@ -19,9 +19,6 @@ const cartSchema = new mongoose.Schema({
       },
     },
   ],
-  appliedCoupon: {
-    type: String,
-  },
 });
 
 module.exports = mongoose.model("cart", cartSchema);

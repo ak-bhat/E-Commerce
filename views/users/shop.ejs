@@ -66,7 +66,6 @@
                               <!-- <li><a href="/wishlist"><i class="icon-heart-o"></i>My Wishlist </a></li> -->
                               <li><a href="/about">About Us</a></li>
                               <li><a href="/contact">NEED HELP</a></li>
-                              <li><a href="/signin" ><i class="icon-user"></i>Login</a></li>
                            </ul>
                         </li>
                      </ul>
@@ -223,7 +222,9 @@
                         <div>
                            <div class="products mb-3">
                               <div class="row justify-content-center">
+                                 
                                  <% products.forEach(product => { %>
+                                    <% if (product.category.isListed==true) {%>
                                     <div class="col-6 col-md-4 col-lg-4">
                                        <div class="product product-7 text-center">
                                           <figure class="product-media">
@@ -245,16 +246,16 @@
                                           </figure>
                                           <div class="product-body">
                                              <div class="product-cat">
-                                                <a href="#"><%= product.category %></a>
+                                                <a href="#"><%= product.category.categoryName %></a>
                                              </div>
                                              <h3 class="product-title"><a href="/productDetails/<%= product._id %>"><%= product.name %></a></h3>
-                              <div class="product-price">
-                                 <% if (product.quantity === 0) { %>
-                                    <span class="out-price">Out Of Stock</span>
-                                 <% } else { %>
-                                    <span class="price">₹<%= product.price.toFixed(2) %></span>
-                                 <% } %>
-                              </div>
+                                          <div class="product-price">
+                                             <% if (product.quantity === 0) { %>
+                                                <span class="out-price">Out Of Stock</span>
+                                             <% } else { %>
+                                                <span class="price">₹<%= product.price.toFixed(2) %></span>
+                                             <% } %>
+                                          </div>
                                              <div class="ratings-container">
                                                 <div class="ratings">
                                                    <div class="ratings-val" style="width: 20%;"></div>
@@ -271,8 +272,9 @@
                                           </div>
                                        </div>
                                     </div>
+                                    <% } %>
                                  <% }); %>
-                                 
+                                
                               </div>
                            </div>
                            <nav aria-label="Page navigation">
@@ -323,7 +325,7 @@
                            </h3>
                            <div class="collapse show" id="categoryFilter">
                               <div class="widget-body">
-                                 <form action="/shop" method="GET" id="categoryFilterForm" style="background-color: #666;">
+                                 <form action="/shop" method="GET" id="categoryFilterForm" style="background-color: #f5d4ec">
                                     <div class="filter-items filter-items-count">
                                        <label for="sort">Category Filter</label>
                                        <!-- Add an "All Products" checkbox -->
@@ -340,7 +342,7 @@
                                        <div class="filter-item">
                                           <div class="custom-control custom-checkbox">
                                              <input type="checkbox" class="custom-control-input category-checkbox" id="cat-<%= category %>" name="category" value="<%= category %>">
-                                             <label class="custom-control-label" for="cat-<%= category %>"><%= category %></label>
+                                             <label class="custom-control-label" for="cat-<%= category %>"><%= category.category.categoryName %></label>
                                           </div>
                                        </div>
                                        <% }); %>
@@ -503,6 +505,52 @@
                }
             });
          });
+       </script>
+       <script>
+         const addToCartBtn = document.querySelectorAll('.addToCartBtn')
+    addToCartBtn.forEach((btn)=>{
+        btn.addEventListener('click',addTocartFn)
+    })
+    
+    async function addTocartFn (){
+        try {
+            const productId = this.getAttribute('data-prodId')
+            
+            const response = await fetch ('/addToCart',{
+                method:'POST',
+                headers: {
+                    'Content-Type':'application/json'
+                },
+                body: JSON.stringify({productId})
+            }
+            ) 
+    
+            const data = await response.json()
+            if(data.message === 'This product has already been added to your cart.' ){
+                Swal.fire({
+                icon: 'warning',
+                title: data.message,
+                // text: data.message,
+                timer:3000
+            });
+            }else if(data.message === 'Item successfully added to your cart.'){
+                Swal.fire({
+                icon: 'success',
+                title: data.message,
+                // text: data.message,
+                timer:3000
+            })
+            }else if(data.message === 'Cart created successfully.'){
+                Swal.fire({
+                    icon: 'success',
+                    title: data.message,
+                    timer:3000
+                })
+            }
+        } catch (error) {
+            console.log('add to cart not wokring');
+        }
+    }
        </script>
       <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
       <!-- Add this script at the end of your EJS file or in a separate script file -->

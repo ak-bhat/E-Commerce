@@ -161,7 +161,13 @@ const resendOTP = async (req, res) => {
 const userHome = async (req, res) => {
     try {
       // Fetch all products from the database and render the home page
-      const products = await Product.find({});
+      const filteredProducts = await Product.find({isListed:true})
+      .populate({
+        path: 'category',
+        match: { isListed: true }})
+        .exec();
+
+        const products = filteredProducts.filter(product => product.category !== null);
       res.render("home", { products });
     } catch (error) {
       console.log(error.message);
@@ -231,7 +237,15 @@ const loadShop = async (req, res) => {
       const pageSize = 6;
   
       // Fetch distinct categories from the Product model
-      const categories = await Product.distinct("category");
+      // const categories = await Product.distinct('category')
+      
+      const filteredCategories = await Product.find()
+      .populate({
+        path: 'category',
+        match: { isListed: true }})
+      .exec();
+      const categories = filteredCategories.filter(category => category.category !== null);
+      console.log(categories)
       const name =await Product.distinct('name');
       const price = await Product.distinct('price');
   
@@ -270,10 +284,17 @@ const loadShop = async (req, res) => {
 
 
       // Fetch products based on query and pagination
-      const products = await Product.find(query)
+      const filteredProducts = await Product.find(query)
+      .populate({
+        path: 'category',
+        match: { isListed: true }})
         .sort(sortCriteria)
         .skip((page - 1) * pageSize)
         .limit(pageSize)
+        .exec();
+
+        const products = filteredProducts.filter(product => product.category !== null);
+         console.log("Hi"+products)
   
       // Count total products for pagination
       const totalProducts = await Product.countDocuments(query);
@@ -297,14 +318,20 @@ const loadProductDetails = async (req, res) => {
       if (!req.session || !req.session.user_id) {
         return res.redirect("/");
       }
-      const referrer = req.get('Referrer');
       // Extract product id from route parameters
       const productId = req.params.productId;
       // Fetch product details from Product model
-      const product = await Product.findById(productId);
+      // const product = await Product.findById(productId);
+      const product = await Product.findById(productId)
+      .populate({
+        path: 'category',
+        match: { isListed: true }})
+        .exec();
+
+        
   
       // Render the productDetails page with product details
-      res.render("productDetails", { product, referrer});
+      res.render("productDetails", { product});
     } catch (error) {
       console.log(error.message);
       res.status(500).send("Internal Server Error");

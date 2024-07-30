@@ -64,7 +64,7 @@ userRoute.delete('/removeFromCart/:productId', auth.isLogin, cartControl.removeF
 userRoute.get('/checkout',auth.isLogin,orderControl.loadCheckout);
 userRoute.post('/placeOrder', auth.isLogin, orderControl.placeOrder);
 userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
-userRoute.post('/addShippingDetails', auth.isLogin, orderControl.addShippingDetails);
+userRoute.post('/addShippingDetails', auth.isLogin, userProControl.addShippingDetails);
 userRoute.get('/loadOrderPlaced',auth.isLogin , orderControl.loadOrderPlaced);
 
 userRoute.get('/orders',auth.isLogin,orderControl.loadOrders);

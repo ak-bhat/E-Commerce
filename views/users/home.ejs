@@ -4,7 +4,7 @@
     <div class="container">
        <div class="intro-slider-container slider-container-ratio mb-2">
           <div class="intro-slider owl-carousel owl-simple owl-light owl-nav-inside" data-toggle="owl" data-owl-options='{"nav": false}'>
-             <div class="intro-slide">
+             <div class="intro-slide" style="background-color: white;">
                 <figure class="slide-image">
                    <picture>
                       <source media="(max-width: 480px)" srcset="/assets/images/backgrounds/qnt2.jpg">
@@ -151,7 +151,7 @@
                    }
                    }'>
                    <% products.forEach(product => { %>
-                     <% if (product.isListed) { %>
+                     <% if (product.isListed && product.category.isListed==true){ %>
                         <div class="product product-3 text-center">
                            <figure class="product-media">
                               <% if (product.quantity === 0) { %>
@@ -168,7 +168,7 @@
                            </figure>
                            <div class="product-body">
                               <div class="product-cat">
-                                 <a href="#"><%= product.category %></a>
+                                 <a href="#"><%= product.category.categoryName %></a>
                               </div>
                               <h3 class="product-title"><a href="/productDetails/<%= product._id %>"><%= product.name %></a></h3>
                               <div class="product-price">

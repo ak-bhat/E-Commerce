@@ -94,7 +94,43 @@ const addAddress = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
+const addShippingDetails = async (req, res) => {
+  try {
+    const loggedInUserId = req.session.user_id;
 
+    const {
+      firstName,
+      lastName,
+      hcName,
+      streetName,
+      city,
+      state,
+      pincode,
+      email,
+      mobile,
+    } = req.body;
+
+    const newShippingDetails = new address({
+      userId: loggedInUserId,
+      firstName,
+      lastName,
+      hcName,
+      streetName,
+      city,
+      state,
+      pincode,
+      email,
+      mobile,
+    });
+
+    await newShippingDetails.save();
+
+    res.redirect("/checkout");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+};
 // Function to change user password
 const changePassword = async (req, res) => {
   try {
@@ -277,4 +313,5 @@ module.exports = {
   removeAddress,
   updateAddress,
   getAddress,
+  addShippingDetails
 };

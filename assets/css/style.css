@@ -3116,13 +3116,20 @@ a {
     font-family: 'Poppins'
 }
 
+#signin p{
+    color: yellow;
+}
+#signin label{
+    color: yellow;
+}
+
 p {
     margin-bottom: 0;
     font-size: 1.4rem;
     font-weight: 300;
     font-family: 'Poppins';
     letter-spacing: 0;
-    color: yellow;
+    color: rgb(0, 0, 0);
 }
 
 .header-2 {
@@ -10140,7 +10147,7 @@ p {
     font-size: 1.4rem;
     line-height: 1.5;
     font-weight: 300;
-    color: yellow;
+    color: black;
     background-color: #666;
     border: 1px solid #ebebeb;
     border-radius: 0;
@@ -10190,7 +10197,7 @@ textarea.form-control {
 }
 
 label {
-    color: yellow;
+    color: black;
     font-weight: 300;
     font-size: 1.4rem;
     margin: 0 0 1.1rem
@@ -10831,6 +10838,7 @@ small.form-text {
 .modal-backdrop {
     background-color: #333
 }
+
 
 .modal-backdrop.show {
     opacity: .4

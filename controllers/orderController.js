@@ -4,8 +4,6 @@ const Product = require("../models/productsModel");
 const { Order } = require("../models/ordersModel");
 const users = require("../models/userModel");
 const Cart = require("../models/cartModel");
-const bcrypt = require("bcrypt");
-require("dotenv").config();
 
 
 
@@ -42,13 +40,7 @@ const createOrder = async (req, res) => {
       
 
 
-      const options = {
-        amount: Math.max(totalAmount * 100, 100),
-        currency: "INR",
-        receipt: "order1",
-      };
-
-      instance.orders.create(options, function (err, order) {
+      instance.orders.create(totalAmount, function (err, order) {
         if (err) {
           console.error(err);
           res.status(500).json({ error: "Failed to create order" });
@@ -101,8 +93,7 @@ const placeOrder = async (req, res) => {
       }
     
 
-      // Move quantity reduction logic inside the coupon block
-
+     
       const paymentMethod = req.body.paymentMethod;
       
 
@@ -188,43 +179,44 @@ const loadCheckout = async (req, res) => {
 };
 
 
-const addShippingDetails = async (req, res) => {
-  try {
-    const loggedInUserId = req.session.user_id;
 
-    const {
-      firstName,
-      lastName,
-      hcName,
-      streetName,
-      city,
-      state,
-      pincode,
-      email,
-      mobile,
-    } = req.body;
+// const addShippingDetails = async (req, res) => {
+//   try {
+//     const loggedInUserId = req.session.user_id;
 
-    const newShippingDetails = new address({
-      userId: loggedInUserId,
-      firstName,
-      lastName,
-      hcName,
-      streetName,
-      city,
-      state,
-      pincode,
-      email,
-      mobile,
-    });
+//     const {
+//       firstName,
+//       lastName,
+//       hcName,
+//       streetName,
+//       city,
+//       state,
+//       pincode,
+//       email,
+//       mobile,
+//     } = req.body;
 
-    await newShippingDetails.save();
+//     const newShippingDetails = new address({
+//       userId: loggedInUserId,
+//       firstName,
+//       lastName,
+//       hcName,
+//       streetName,
+//       city,
+//       state,
+//       pincode,
+//       email,
+//       mobile,
+//     });
 
-    res.redirect("/checkout");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
-};
+//     await newShippingDetails.save();
+
+//     res.redirect("/checkout");
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).send("Internal Server Error");
+//   }
+// };
 
 const orderPlaced = async (req, res) => {
   try {
@@ -247,9 +239,10 @@ const loadOrders = async (req, res) => {
     const orders = await Order.find({ userId: req.session.user_id })
       .populate({
         path: "products.productId",
-        select: "name image",
+        select: "name productImage",
       })
-      .populate("shippingAddress");
+      .populate("shippingAddress")
+      .sort({orderDate:-1});
 
     res.render("orders", { orders });
   } catch (error) {
@@ -315,38 +308,8 @@ const cancelOrder = async (req, res) => {
       date: new Date(),
     };
 
-    let cancelledProductAmount = product.price * productInOrder.quantity;
 
-
-    if (
-      productInOrder.ProductOrderStatus === "Cancelled" &&
-      (order.paymentMethod === "Online Payment" ||
-        order.paymentMethod === "Wallet Money") &&
-      order.paymentStatus === "Success"
-    ) {
-      const user = await users.findById(order.userId);
-
-      if (!user) {
-        return res.status(404).send("User not found");
-      }
-
-      user.wallet.balance += cancelledProductAmount;
-
-      user.wallet.history.push({
-        type: "Credit",
-        amount: cancelledProductAmount,
-        date: new Date(),
-        reason: `Order cancellation: ${cancelDescription}`,
-      });
-
-      if (order.paymentMethod === "Wallet Money") {
-        order.paymentStatus = "Refunded to wallet";
-      } else if (order.paymentMethod === "Online Payment") {
-        order.paymentStatus = "Refunded to wallet";
-      }
-
-      await user.save();
-    } else if (order.paymentMethod === "Cash on Delivery") {
+    if (order.paymentMethod === "Cash on Delivery") {
       order.paymentStatus = "Cancelled";
     }
 
@@ -408,12 +371,6 @@ const returnProduct = async (req, res) => {
 
       user.wallet.balance += returnAmount;
 
-      user.wallet.history.push({
-        type: "Credit",
-        amount: returnAmount,
-        date: new Date(),
-        reason: `Product return (Defective/Damaged): ${returnReason}`,
-      });
 
       await user.save();
     } else {
@@ -473,7 +430,6 @@ const returnProduct = async (req, res) => {
 
 module.exports = {
   loadCheckout,
-  addShippingDetails,
   orderPlaced,
   placeOrder,
   loadOrders,

@@ -243,12 +243,15 @@ const saveProduct = async (req, res) => {
     const {price, description, size, stock, } = req.body;
     const productImages = req.files.map(file => file.filename);
     
-                    console.log('The images : ',productImages)
+                    // console.log('The images : ',productImages)
     
-                    
+                    const categoryBody = req.body.category;
+                    const categoryName = await category.find({ categoryName: categoryBody});
+                    // console.log(categoryName)
+                    // console.log(categoryName[0]._id)
                      const product = new Product({
                          name: req.body.name,
-                         category: req.body.category,
+                         category: categoryName[0]._id,
                          description: req.body.description,
                          price: req.body.price,
                          quantity: req.body.quantity
@@ -303,22 +306,20 @@ const editProduct = async (req, res) => {
   try {
     const productId = req.params.productId;
 
-    const { name, size, gender, category, quantity, description, price } =
+    const { name, category, quantity, description, price } =
       req.body;
 
     const product = await Product.findById(productId);
 
     product.name = name;
-    product.size = [size];
-    product.gender = gender;
-    product.category = category;
     product.quantity = quantity;
+    product.category = category;
     product.description = description;
     product.price = price;
 
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        product.image.push({ data: file.buffer, contentType: file.mimetype });
+        product.productImage.push({ data: file.buffer, contentType: file.mimetype });
       });
     }
 
@@ -386,7 +387,7 @@ const updateProduct = async (req, res) => {
       category,
       description,
       price,
-      image: product.productImage.concat(newImageData),
+      productImage: product.productImage.concat(newImageData),
     };
 
     product.set(updatedData);
@@ -432,7 +433,7 @@ const deleteProductImage = async (req, res) => {
 
 const loadOrder = async (req, res) => {
   try {
-    const orders = await Order.find().populate("products.productId").lean();
+    const orders = await Order.find().populate("products.productId").lean().sort({orderDate:-1});  //converts the Mongoose documents into plain JavaScript objects
 
     res.render("ordersPage", { orders });
   } catch (error) {
