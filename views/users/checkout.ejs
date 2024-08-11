@@ -436,17 +436,19 @@
     }else if (selectedPaymentMethod === 'onlinePayment') {
             let orderId;
             let amount;
-
+            let amt = <%= parseInt(subtotal).toFixed(2) %>;
+            amt = parseInt(amt*100);
+            console.log(amt)
             const requestOptions = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    amount: "<%= subtotal.toFixed(2) %>",
+                    amount: amt,
                     couponCode
                 }),
-            };
+            };console.log("<%= subtotal.toFixed(2) %>");
 
             fetch("/createOrder", requestOptions)
                 .then(response => response.json())
@@ -463,15 +465,16 @@
                         return;
                     }
                     orderId = response.orderId;
-                    amount = response.totalAmount;
+                    amount = amt;
+                    console.log(amount);
 
 
 
                     const options = {
-                        key: 'rzp_test_drocZnmdJ2flsA',
+                        key: 'rzp_test_iuTRDa0zNHlIKP',
                         amount: amount,
                         currency: 'INR',
-                        name: 'RudoPedia',
+                        name: 'Gravity',
                         description: 'Ecommerce Transactions',
                         image: '/assets/images/icon.png',
                         order_id: orderId,

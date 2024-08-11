@@ -1,10 +1,17 @@
 const address = require("../models/addressModel");
 const Product = require("../models/productsModel");
-
+require("dotenv").config();
 const { Order } = require("../models/ordersModel");
 const users = require("../models/userModel");
 const Cart = require("../models/cartModel");
 const Coupon = require("../models/couponModel");
+const Razorpay = require("razorpay");
+const crypto = require("crypto");
+
+var instance = new Razorpay({
+  key_id: process.env.RAZORPAY_ID,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
 
 
 const createOrder = async (req, res) => {
@@ -78,6 +85,91 @@ const createOrder = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+const verifyOrder = async (req, res) => {
+  try {
+    const loggedInUserId = req.session.user_id;
+    const cart = await Cart.findOne({ user: loggedInUserId }).populate(
+      "products.product"
+    );
+    const { response, selectedAddress, paymentMethod, couponCode } = req.body;
+
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      response;
+
+    const key_secret = process.env.RAZORPAY_SECRET;
+    let hmac = crypto.createHmac("sha256", key_secret);
+
+    hmac.update(razorpay_order_id + "|" + razorpay_payment_id);
+    const generated_signature = hmac.digest("hex");
+
+    if (razorpay_signature === generated_signature) {
+      const cartItems = cart.products;
+
+      let couponId = null;
+      if (couponCode) {
+        const coupon = await Coupon.findOne({ code: couponCode });
+        if (coupon) {
+          couponId = coupon._id;
+        }
+      }
+
+      const addressId = selectedAddress;
+      const shippingAddress = addressId
+        // ? await address.findById(addressId)
+        // : null;
+
+      let totalAmount = req.body.amount;
+
+      for (const cartItem of cartItems) {
+        const product = await Product.findById(cartItem.product._id);
+        const quantityInCart = cartItem.count;
+
+        product.quantity -= quantityInCart;
+        await product.save();
+      }
+
+      const newOrder = new Order({
+        userId: loggedInUserId,
+        shippingAddress: shippingAddress,
+        products: cartItems.map((item) => ({
+          productId: item.product._id,
+          quantity: item.count,
+          ProductOrderStatus: "Pending",
+          returnOrderStatus: {},
+        })),
+        OrderStatus: "Pending",
+        StatusLevel: 1,
+        paymentStatus: "Success",
+        totalAmount,
+        paymentMethod,
+        coupon: couponId,
+        trackId: "Generated Track ID",
+      });
+
+      await newOrder.save();
+      await Cart.findOneAndUpdate(
+        { user: loggedInUserId },
+        { $set: { products: [] } }
+      );
+
+      await users.findByIdAndUpdate(loggedInUserId, {
+        $unset: { appliedCoupon: 1 },
+      });
+
+      res.json({ success: true, message: "Payment has been verified" });
+    } else {
+      res.json({ success: false, message: "Payment verification failed" });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+
+
 
 const placeOrder = async (req, res) => {
   try {
@@ -673,5 +765,6 @@ module.exports = {
   createOrder,
   loadOrderPlaced,
   getCoupon,
-  fetchWalletBalance
+  fetchWalletBalance,
+  verifyOrder
 };

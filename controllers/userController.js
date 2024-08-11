@@ -323,12 +323,19 @@ const loadShop = async (req, res) => {
       const selectedCategory = req.query.category;
       const sortOption = req.query.sort;
 
+
       // Define query based on selected category
       const query = { isListed: true };
       if (selectedCategory && selectedCategory !== "all") {
         query.category = selectedCategory;
       }
       
+      // search queries
+      const searchQuery = req.query.searchQuery || '';
+
+      if (searchQuery) {
+        query.name = { $regex: searchQuery, $options: 'i' }; // Case-insensitive search
+    }
 
       // Define sort criteria based on sort option
     let sortCriteria = {};
@@ -372,6 +379,7 @@ const loadShop = async (req, res) => {
       // Render the shop page with products, pagination, and categories
       res.render("shop", {
         products,
+        searchQuery,
         currentPage: page,
         totalPages: Math.ceil(totalProducts / pageSize),
         categories,

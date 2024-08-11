@@ -71,9 +71,11 @@ userRoute.delete('/removeFromWishList/:productId', auth.isLogin, userControl.rem
 userRoute.get('/fetchWalletBalance/:userId', orderControl.fetchWalletBalance);
 userRoute.get('/checkout',auth.isLogin,orderControl.loadCheckout);
 userRoute.post('/placeOrder', auth.isLogin, orderControl.placeOrder);
-// userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
+userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
 userRoute.post('/addShippingDetails', auth.isLogin, userProControl.addShippingDetails);
 userRoute.get('/loadOrderPlaced',auth.isLogin , orderControl.loadOrderPlaced);
+userRoute.post('/api/payment/verify',auth.isLogin,orderControl.verifyOrder);
+
 
 userRoute.post('/storeAppliedCoupon', (req, res) => {
   const { couponCode } = req.body;
