@@ -271,9 +271,10 @@
                                     <div class="form-group">
                                        <label>Images Upload (Required 3)</label>
                                        <div class="input-group col-md-12">
-                                          <input type="file" id="imageUpload" name="productImage" multiple class="form-control file-upload-info" required />
+                                          <input type="file" id="imageUpload" name="productImage" multiple class="form-control file-upload-info" accept="image/*" required />
                                        </div>
                                        <div id="imagePreview" class="mt-4 mb-2 d-flex flex-wrap" style="max-width: 500px"></div>
+                                       <div id="errorMessage" style="color: red; margin-top: 10px;"></div>
                                     </div>
                                     <!-- Product price input -->
                                     <div class="form-group">
@@ -282,7 +283,7 @@
                                        <small id="priceHelp" class="form-text text-muted">Enter the price of the product.</small>
                                     </div>
                                     <!-- Submit and Cancel buttons -->
-                                    <button type="submit" class="btn btn-outline-primary me-2" style="height: 35px">Submit</button>
+                                    <button type="submit" class="btn btn-outline-primary me-2" style="height: 35px" id="submitButton">Submit</button>
                                     <button class="btn btn-outline-secondary" style="height: 35px">Cancel</button>
                                  </form>
                                  <!-- End form for adding products -->
@@ -337,21 +338,38 @@
                     const imageUploadInput = document.getElementById("imageUpload");
                     const imagePreviewContainer = document.getElementById("imagePreview");
                     let croppers = [];
+                    const submitButton = document.getElementById('submitButton');
                   
                     imageUploadInput.addEventListener("change", function () {
                       imagePreviewContainer.innerHTML = "";
                 
                       const files = this.files;
-                
+                      const errorMessage = document.getElementById('errorMessage');
+                      errorMessage.textContent = ''; 
+
+                      if (files.length < 3) {
+                        errorMessage.textContent = 'Please upload at least 3 images.';
+                        return;
+                     }
+
                       if (files.length > 3) {
                         this.value = "";
                         alert("You can upload up to 3 images only.");
                         return;
                       }
+
+
+                      
                 
                        // Iterate through selected files and create cropper instances
                        for (let i = 0; i < files.length; i++) {
                         const file = files[i];
+
+                        if (!file.type.startsWith('image/')) {
+                           errorMessage.textContent = 'Only image files are allowed! Refresh to Continue';
+                           submitButton.disabled = true;
+                        }else {
+                          
                         const reader = new FileReader();
                 
                         reader.onload = function (e) {
@@ -378,6 +396,7 @@
                         };
                 
                         reader.readAsDataURL(file);
+                        }
                       }
                     });
 
@@ -429,6 +448,18 @@
                      } else {
                         this.setCustomValidity('');
                      }
+                     this.reportValidity(); 
+                     });
+                  </script>
+
+                  <script>
+                     document.getElementById('productPrice').addEventListener('input', function() {
+                     if (this.value < 1) {
+                        this.setCustomValidity('Enter a valid Amount');
+                     } else {
+                        this.setCustomValidity('');
+                     }
+                     this.reportValidity(); 
                      });
                   </script>
                 

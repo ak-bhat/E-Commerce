@@ -24,15 +24,15 @@
                      <div class="row" id="userProfile">
                         <aside class="col-md-4 col-lg-3">
                            <ul class="nav nav-dashboard flex-column mb-3 mb-md-0" role="tablist">
-                              <!-- <li class="nav-item">
+                              <li class="nav-item">
                                  <a class="nav-link active" id="tab-dashboard-link" data-toggle="tab" href="#tab-dashboard" role="tab" aria-controls="tab-dashboard" aria-selected="true">Dashboard</a>
-                              </li> -->
+                              </li>
                               <li class="nav-item">
                                  <a class="nav-link" id="tab-account-link" data-toggle="tab" href="#tab-account" role="tab" aria-controls="tab-account" aria-selected="false">Account Details</a>
                               </li>
-                              <!-- <li class="nav-item">
+                              <li class="nav-item">
                                 <a class="nav-link" id="tab-wallet-link" data-toggle="tab" href="#tab-wallet" role="tab" aria-controls="tab-wallet" aria-selected="false">Wallet</a>
-                             </li> -->
+                             </li>
                               <li class="nav-item">
                                  <a class="nav-link" id="tab-password-link" data-toggle="tab" href="#tab-password" role="tab" aria-controls="tab-password" aria-selected="false">Change Password</a>
                               </li>
@@ -52,12 +52,56 @@
                         <!-- End .col-lg-3 -->
                         <div class="col-md-8 col-lg-9">
                            <div class="tab-content">
+
+
+                              <div class="tab-pane fade show active" id="tab-dashboard" role="tabpanel" aria-labelledby="tab-dashboard-link" >
+                                 <p>Hello <span class="font-weight-normal text-dark"><%= user.firstName %> <%= user.secondName %></span>
+                                     <br>
+                                     Happy that you are using our Service, We Welcome <a href="#" class="tab-trigger-link"><%= user.firstName %></a>, on our <a href="#" class="tab-trigger-link link-underline">Gravity Network</a> Feel free to shop for everything you need. For any assistance, please contact us at <a href="#" class="tab-trigger-link link-underline">+001 002003</a>. Don't forget to check your latest and most recent  <a href="#tab-orders" class="tab-trigger-link link-underline">orders</a>.
+                                     <br>
+                                     <br><Br>
+                                       <% if (!user.referralCode) { %>
+                                             <form action="/referral">
+                                                <button type="submit">Create Referral Code</button>
+                                             </form>
+                                       <% } %>
+                             
+                                     <% if (user.referralCode) { %>
+                                         Your referral link: <a id="referralLink" href="<%= `/login?ref=${generatedReferralCode}&userId=${user.id}` %>" target="_blank"><%= `/login?ref=${user.referralCode}&userId=${user.id}` %></a>
+                                         <br>
+                                         <button class="btn-outline-primary-2" onclick="copyReferralLink()">Copy Link</button>
+                                         <br>
+                                         Share this link with your friends and earn rewards!
+                                     <% } %>
+                             
+                                     <script>
+                                         function copyReferralLink() {
+                                             var referralLink = document.getElementById("referralLink");
+                                             var range = document.createRange();
+                                             range.selectNode(referralLink);
+                                             window.getSelection().removeAllRanges(); // Clear previous selections
+                                             window.getSelection().addRange(range);
+                                             document.execCommand("copy");
+                                             window.getSelection().removeAllRanges(); // Clear the selection
+                                            
+                                             Swal.fire({
+                                             icon: 'success',
+                                             title: "Referral link copied to clipboard!",
+                                             // text: data.message,
+                                             timer:3000
+                                         });
+                                         }
+                                     </script>
+                                 </p>
+                             </div>
+
+
                               <div class="tab-pane fade" id="tab-account" role="tabpanel" aria-labelledby="tab-account-link">
                                  <form id="profileForm" action="/updateUserProfile" method="post">
                                     <div class="row">
                                        <div class="col-sm-6">
                                           <label>First Name *</label>
-                                          <input type="text" class="form-control" id="firstNameInput" name="firstName" value="<%= user.firstName %>" readonly required">
+                                          <input type="text" class="form-control" id="firstNameInput" name="firstName" value="<%= user.firstName %>" readonly required>
                                        </div>
                                        <!-- End .col-sm-6 -->
                                        <div class="col-sm-6">
@@ -100,20 +144,62 @@
                                      editButton.style.display = 'none';
                                      submitButton.style.display = 'block';
                                  });
+                        
+                                 document.getElementById('profileForm').addEventListener('submit', function(event) {
+                                     const firstName = document.getElementById('firstNameInput').value.trim();
+                                     const lastName = document.getElementById('lastNameInput').value.trim();
+                                     const email = document.getElementById('emailInput').value.trim();
+                                     const mobile = document.getElementById('mobileInput').value.trim();
+                        
+                                     let valid = true;
+                                     let errorMessage = '';
+                        
+                                     // First Name Validation
+                                     if (!/^[A-Za-z]+$/.test(firstName)) {
+                                         errorMessage += 'First name must contain only letters.\n';
+                                         valid = false;
+                                     }
+                        
+                                     // Last Name Validation
+                                     if (!/^[A-Za-z]+$/.test(lastName)) {
+                                         errorMessage += 'Last name must contain only letters.\n';
+                                         valid = false;
+                                     }
+                        
+                                     // Email Validation
+                                     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                                         errorMessage += 'Invalid email format.\n';
+                                         valid = false;
+                                     }
+                        
+                                     // Mobile Number Validation
+                                     if (!/^\d{10}$/.test(mobile)) {
+                                         errorMessage += 'Mobile number must be 10 digits.\n';
+                                         valid = false;
+                                     }
+                        
+                                     if (!valid) {
+                                         alert(errorMessage);
+                                         event.preventDefault();
+                                     }
+                                 });
                               </script>
+                        
 
 
 
 
 
                               <div class="tab-pane fade" id="tab-password" role="tabpanel" aria-labelledby="tab-password-link">
-                                 <form action="/change-password" method="POST">
+                                 <form id="changePasswordForm" action="/change-password" method="POST">
                                     <label>Current password</label>
                                     <input type="password" class="form-control" name="currentPassword">
                                     <label>New password</label>
-                                    <input type="password" class="form-control" name="newPassword">
+                                    <input type="password" class="form-control" id="newPassword" name="newPassword">
+                                    <div id="passwordCriteria" style="font-size: 0.9em; color: red; margin-top: 5px;"></div>
                                     <label>Confirm new password</label>
-                                    <input type="password" class="form-control mb-2" name="confirmPassword">
+                                    <input type="password" class="form-control mb-2" id="confirmPassword" name="confirmPassword">
+                                    <div id="passwordMatch" style="font-size: 0.9em; color: red; margin-top: 5px;"></div>
                                     <button type="submit" class="btn btn-outline-primary-2" style="margin-bottom: 20px;">
                                     <span>CHANGE</span>
                                     <i class="icon-long-arrow-right"></i>
@@ -125,6 +211,10 @@
                                     <% } %>
                                  </form>
                               </div>
+
+
+
+
                               <div class="tab-pane fade" id="tab-addAddress" role="tabpanel" aria-labelledby="tab-addAddress-link" >
                                  <form id="addAddressForm" action="/addAddress" method="POST">
                                     <div class="row">
@@ -200,7 +290,7 @@
                                           <div class="card-body">
                                              <div class="d-flex justify-content-between align-items-center">
                                                 <h3 class="card-title mb-0">Delivery Address</h3>
-                                                <button class="btn-remove" data-addressId="<%= address._id %>">
+                                                <button class="btn-remove" data-addressId="<%= address._id %>" onclick="confirmRemove('<%= address._id %>')">
                                                 <i class="icon-close"></i>
                                                 </button>
                                              </div>
@@ -283,6 +373,35 @@
                               </div>
 
 
+                              <div class="tab-pane fade" id="tab-wallet" role="tabpanel" aria-labelledby="tab-wallet-link">
+                                 <div>
+                                   <h5>Wallet Details</h5>
+                                 </div>
+                                 <div>
+                                   <button class="btn btn-outline-primary">Wallet Balance <%= user.wallet.balance %></button>
+                                   <h6 style="margin-top: 10px;">Transaction History</h6>
+                                   <table class="table">
+                                     <thead>
+                                       <tr>
+                                         <th>Type</th>
+                                         <th>Amount</th>
+                                         <th>Date</th>
+                                       </tr>
+                                     </thead>
+                                     <tbody>
+                                       <% user.wallet.history.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(transaction => { %>
+                                          <tr style="color: <%= transaction.type === 'Credit' ? 'green' : 'red' %>;">                                            <td><%= transaction.type %></td>
+                                            <td><%= transaction.amount %></td>
+                                            <td><%= transaction.date %></td>
+                                          </tr>
+                                        <% }) %>
+                                        
+                                     </tbody>
+                                   </table>
+                                 </div>
+                               </div>
+
+
       
                                
                               
@@ -307,8 +426,51 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
 
+
+    <script>
+      document.getElementById('newPassword').addEventListener('input', function() {
+         const password = this.value;
+         const criteria = document.getElementById('passwordCriteria');
+         const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+   
+         if (!strongPassword.test(password)) {
+            criteria.textContent = 'Password must be at least 8 characters long, include uppercase and lowercase letters, a number, and a special character.';
+         } else {
+            criteria.textContent = '';
+         }
+      });
+   
+      document.getElementById('confirmPassword').addEventListener('input', function() {
+         const newPassword = document.getElementById('newPassword').value;
+         const confirmPassword = this.value;
+         const matchMessage = document.getElementById('passwordMatch');
+   
+         if (newPassword !== confirmPassword) {
+            matchMessage.textContent = 'Passwords do not match.';
+         } else {
+            matchMessage.textContent = '';
+         }
+      });
+   
+      document.getElementById('changePasswordForm').addEventListener('submit', function(event) {
+         const password = document.getElementById('newPassword').value;
+         const confirmPassword = document.getElementById('confirmPassword').value;
+         const criteria = document.getElementById('passwordCriteria');
+         const matchMessage = document.getElementById('passwordMatch');
+         const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+   
+         if (!strongPassword.test(password)) {
+            event.preventDefault();
+            criteria.textContent = 'Please enter a stronger password.';
+         }
+   
+         if (password !== confirmPassword) {
+            event.preventDefault();
+            matchMessage.textContent = 'Passwords must match.';
+         }
+      });
+   </script>
     
 
     <script>
@@ -372,19 +534,29 @@ function updateAddress(addressId) {
 
 
 
+      function confirmRemove(addressId) {
+        
+          Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you really want to delete?",
+            icon: 'warning',
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: 'Yes!'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              removeAddress(addressId);
+            }
+          });
+        }; 
 
 
 
 // Add this code in a script tag or separate JS file, alongside other JavaScript code
 
-const removeAddressButtons = document.querySelectorAll(".btn-remove");
-removeAddressButtons.forEach((button) => {
-    button.addEventListener("click", removeAddress);
-});
 
-async function removeAddress() {
+async function removeAddress(addressId) {
     try {
-        const addressId = this.getAttribute("data-addressId");
 
         const response = await fetch(`/removeAddress/${addressId}`, {
             method: "DELETE",

@@ -202,4 +202,26 @@
        imageElement.remove();
    }
 </script>
+
+<script>
+    document.getElementById('quantityInput').addEventListener('input', function() {
+    if (this.value < 1) {
+       this.setCustomValidity('Stock must be greater than 0');
+    } else {
+       this.setCustomValidity('');
+    }
+    this.reportValidity(); 
+    });
+ </script>
+
+ <script>
+    document.getElementById('productPrice').addEventListener('input', function() {
+    if (this.value < 1) {
+       this.setCustomValidity('Enter a valid Amount');
+    } else {
+       this.setCustomValidity('');
+    }
+    this.reportValidity(); 
+    });
+ </script>
 <%- include('../layouts/adminFooter') %>

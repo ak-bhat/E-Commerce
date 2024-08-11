@@ -71,7 +71,7 @@
                   OTP VERIFICATION PAGE
                 </h1>
 
-                <form action="/verify-otp" method="POST" class="mb-3">
+                <form action="/verify-otp?ref=<%= ref %>&userId=<%=user_id%>" method="POST" class="mb-3">
                   <label for="otp" class="form-label"
                     >Please enter the OTP sent to your email</label
                   >
@@ -149,7 +149,7 @@
                 </form>
 
               
-                <form action="/resend-otp" method="POST" onsubmit="resetTimer()">
+                <form action="/resend-otp?ref=<%= ref %>&userId=<%=user_id%>" method="POST" onsubmit="resetTimer()">
                   <input type="hidden" name="email" value="<%= email %>" />
                   <button type="submit" class="btn btn-outline-primary-2 btn-minwidth-lg btn-secondary mt-2">
                     <span>Resent OTP</span>

@@ -45,6 +45,7 @@ userRoute.post('/signin',userControl.checkUserValid);
 
 userRoute.get("/shop",userControl.loadShop);
 userRoute.get("/productDetails/:productId", auth.isLogin,userControl.loadProductDetails);
+// userRoute.get('/search',userControl.searchProducts)
 
 userRoute.get("/userProfile",auth.isLogin,userProControl.userProfile);
 userRoute.get('/userProfile', auth.isLogin, userProControl.getUserAddresses);
@@ -54,18 +55,32 @@ userRoute.post('/addAddress', auth.isLogin,userProControl.addAddress);
 userRoute.delete('/removeAddress/:addressId', auth.isLogin, userProControl.removeAddress);
 userRoute.put('/updateAddress/:addressId', auth.isLogin, userProControl.updateAddress);
 userRoute.get('/getAddress/:addressId', auth.isLogin, userProControl.getAddress);
+userRoute.get('/referral', auth.isLogin, userControl.generateReferral);
+
 
 userRoute.post('/addToCart',auth.isLogin,cartControl.addToCartFn);
 userRoute.patch('/updateProductCount/:productId', auth.isLogin, cartControl.updateProductCountFn);
 userRoute.get('/cart',auth.isLogin,cartControl.loadCart);
 userRoute.delete('/removeFromCart/:productId', auth.isLogin, cartControl.removeFromCartFn);
 
+userRoute.get('/wishlist',auth.isLogin, userControl.loadWishlist);
+userRoute.post('/addToWishlist', auth.isLogin, userControl.addToWishlist);
+userRoute.delete('/removeFromWishList/:productId', auth.isLogin, userControl.removeFromWishList);
 
+
+userRoute.get('/fetchWalletBalance/:userId', orderControl.fetchWalletBalance);
 userRoute.get('/checkout',auth.isLogin,orderControl.loadCheckout);
 userRoute.post('/placeOrder', auth.isLogin, orderControl.placeOrder);
-userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
+// userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
 userRoute.post('/addShippingDetails', auth.isLogin, userProControl.addShippingDetails);
 userRoute.get('/loadOrderPlaced',auth.isLogin , orderControl.loadOrderPlaced);
+
+userRoute.post('/storeAppliedCoupon', (req, res) => {
+  const { couponCode } = req.body;
+  // req.session.appliedCoupon = couponCode;
+  res.json({ success: true });
+});
+
 
 userRoute.get('/orders',auth.isLogin,orderControl.loadOrders);
 userRoute.get('/orderDetails/:orderId', auth.isLogin, orderControl.loadOrderDetails);

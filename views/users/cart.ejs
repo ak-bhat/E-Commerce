@@ -69,11 +69,20 @@
                                 </div>
                                 <!-- End .product -->
                              </td>
-                             <td class="price-col">
+                             <!-- <td class="price-col">
                                 
                                 <span class="product-price">₹<%= cartItem.product.price.toFixed(2) %></span>
                                 
-                             </td>
+                             </td> -->
+                             <td class="price-col">
+                              <% if (cartItem.product.catOfferPrice !== null) { %>
+                              <span class="product-price">₹<%= cartItem.product.catOfferPrice.toFixed(2) %></span>
+                              <% } else if (cartItem.product.offerPrice !== null) { %>
+                              <span class="product-price">₹<%= cartItem.product.offerPrice.toFixed(2) %></span>
+                              <% } else { %>
+                              <span class="product-price">₹<%= cartItem.product.price.toFixed(2) %></span>
+                              <% } %>
+                           </td>
                              <td class="quantity-col">
                                 <div class="cart-product-quantity">
                                    <div class="d-flex flex-column align-items-center">
@@ -98,8 +107,8 @@
                                 </div>
                              </td>
                              <td class="total-col">
-                                <% const total = cartItem.count * cartItem.product.price; %>
-                                <span class="product-total" data-initial-price="<%= total %>">
+                              <% const total = cartItem.count * (cartItem.product.catOfferPrice !== null ? cartItem.product.catOfferPrice : (cartItem.product.offerPrice !== null ? cartItem.product.offerPrice : cartItem.product.price)); %>
+                              <span class="product-total" data-initial-price="<%= total %>">
                                 <%= total.toFixed(2) %>
                                 </span>
                              </td>
@@ -138,7 +147,7 @@
         <% cartItems.forEach(cartItem => { %>
           <tr class="summary-item">
             <td><%= cartItem.product.name %></td>
-            <% const itemTotal = cartItem.count * cartItem.product.price; %>
+            <% const itemTotal = cartItem.count * (cartItem.product.catOfferPrice !== null ? cartItem.product.catOfferPrice : (cartItem.product.offerPrice !== null ? cartItem.product.offerPrice : cartItem.product.price)); %>
             <td><%= itemTotal.toFixed(2) %></td>
             <% subtotal += itemTotal; %>
           </tr>
@@ -172,7 +181,7 @@ function checkStock(event) {
       Swal.fire({
         icon: 'warning',
         title: 'EMPTY',
-        text: 'Please add some products to your cart before proceeding to checkout', // Missing comma here
+        text: 'Please add some products to your cart before proceeding to checkout', 
         timer: 3000,
         didClose: () => {
           window.location.reload();
@@ -189,7 +198,7 @@ function checkStock(event) {
         Swal.fire({
           icon: 'warning',
           title: '<%= cartItem.product.name %> is out of stock',
-          text: 'Please remove it from your cart', // Missing comma here
+          text: 'Please remove it from your cart',
           timer: 3000,
           didClose: () => {
             window.location.reload();
@@ -201,7 +210,7 @@ function checkStock(event) {
       <% } %>
     <% }); %>
   }
-      const removeButtons = document.querySelectorAll(".btn-remove");
+const removeButtons = document.querySelectorAll(".btn-remove");
 removeButtons.forEach((button) => {
   button.addEventListener("click", removeProduct);
 });
@@ -291,7 +300,9 @@ async function incrementProduct() {
   const productId = this.parentNode.querySelector('.form-control-cart').getAttribute('data-product-id');
   const input = this.parentNode.querySelector('.form-control-cart');
   let newCount = parseInt(input.value) + 1;
-  if (newCount <= 10) {
+  if (newCount > 5) {
+    alert('Maximum Quantity Limit Reached');
+  }else{
     input.value = newCount;
     updateProductCount(productId, newCount);
     // Update the displayed quantity here

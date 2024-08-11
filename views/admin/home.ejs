@@ -291,21 +291,6 @@
                </div>
             </div>
          </div>
-
-         <!-- Audience Map section -->
-         <div class="row" style="margin-top: 20px;">
-            <div class="col-12">
-               <div class="card">
-                  <div class="card-body">
-                     <div class="row">
-                        <div class="col-md-12">
-                           <div id="audience-map" class="vector-map"></div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
       </div>
    </div>
 </div>
@@ -471,11 +456,11 @@
      });
    });
 
-//    // Payment Methods Data
-//    var paymentMethods = {
-//      OnlinePayment: <%= paymentMethods.OnlinePayment || 0 %>,
-//      CashOnDelivery: <%= paymentMethods.CashOnDelivery || 0 %>,
-//    };
+   // Payment Methods Data
+   var paymentMethods = {
+     OnlinePayment: <%= paymentMethods.OnlinePayment || 0 %>,
+     CashOnDelivery: <%= paymentMethods.CashOnDelivery || 0 %>,
+   };
 </script>
 
 <%- include('../layouts/adminFooter') %>

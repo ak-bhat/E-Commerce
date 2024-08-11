@@ -38,6 +38,35 @@ const UserSchema = new mongoose.Schema({
   is_blocked: {
     type: Number,
     default: 0,
+  },
+  wallet: {
+    balance: {
+      type: Number,
+      default: 0,
+    },
+
+    history: [
+      {
+        type: {
+          type: String,
+        },
+        amount: {
+          type: Number,
+        },
+        date: {
+          type: Date,
+          default: Date.now,
+          required: true,
+        },
+        reason: {
+          type: String,
+        },
+      },
+    ],
+  },
+  referralCode: {
+    type: String,
+    unique: true,
   }
 });
 

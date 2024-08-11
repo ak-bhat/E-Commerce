@@ -1,20 +1,51 @@
 const Product = require("../models/productsModel");
+const Category = require("../models/categoryModel")
 const users = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const { sendMail, generateOTP } = require("../mail");
+const Wishlist = require("../models/wishlist");
+const Cart = require("../models/cartModel");
+const address = require("../models/addressModel");
 
 
 // Function to render the signup page
 const userSignupLoad = async (req, res) => {
     try {
-      // Render the login page 
-      
-      res.render("login");
+    // Extract referral code from query parameters
+    let ref = req.query.ref;
+    let user_id= req.query.userId;
+    // Render the login page with referral code
+    res.render("login", { ref,user_id });
     } catch (error) {
       console.log(error.message);
     }
   };
 
+
+// Generate Referral Code
+const generateReferral = async (req,res)=>{
+  try {
+    const loggedInUserId = req.session.user_id;
+  const user = await users.findById(loggedInUserId);
+  const referralCode = user.referralCode;
+  const generatedReferralCode = referralCode || generateRandomReferralCode();
+  if(!user.referralCode){
+    user.referralCode = generatedReferralCode;
+  }
+  // console.log(user.id)
+         // Fetch addresses associated with the user
+  const addresses = await address.find({ userId: loggedInUserId });
+  res.render('userProfile', {user,generatedReferralCode,addresses});
+  } catch (error) {
+    console.error(error);
+  }
+
+}
+
+// Function to generate a random referral code
+const generateRandomReferralCode = () => {
+  return Math.random().toString(36).substring(2, 10);
+};
 
 // Function to securely hash a password using bcrypt
 const securePassword = async (password) => {
@@ -37,6 +68,8 @@ const insertUser = async (req, res) => {
       req.body;
 
       const customer = await users.findOne({ email: email });
+      const ref = req.query.ref;
+      const user_id= req.query.userId;
 
       if(customer){
         res.send('User already exists')
@@ -56,7 +89,7 @@ const insertUser = async (req, res) => {
         };
 
         // Render the OTP verification page with the email
-        res.render("verify-otp", { email });
+        res.render("verify-otp", { email,ref, user_id });
       }
 
     
@@ -95,26 +128,61 @@ const verifyOTP = async (req, res) => {
   
         // Save the new user to the database
         await newUser.save();
+
+        // If user has a referral code, award bonus to referring and new user
+        const ref = req.query.ref;
+        const user_id = req.query.userId;
+      if (ref) {
+        const referringUser = await users.findOne({
+          _id:user_id
+        });
+
+        if (referringUser) {
+          referringUser.wallet.balance += 200;
+          referringUser.wallet.history.push({
+            type: "Credit",
+            amount: 200,
+            reason: "Referral bonus for new user registration",
+          });
+          await referringUser.save();
+
+          newUser.wallet.balance += 100;
+          newUser.wallet.history.push({
+            type: "Credit",
+            amount: 100,
+            reason: "Referral bonus for using a referral link",
+          });
+          await newUser.save();
+        }
+      }
   
         // Clear user details from session
         req.session.userDetails = null;
   
         // Render the OTP verification page with success message
-        return res.redirect("/signin");
+        return res.redirect(`/signin?ref=${ref}&user_id=${user_id}`);
 
       } else {
         // Render the OTP verification page with error message
+        const ref = req.query.ref;
+        const user_id = req.query.userId;
         return res.render("verify-otp", {
           email: email,
           errorMessage: "Incorrect OTP",
+          ref,
+          user_id
         });
       }
     } catch (error) {
       console.error(error.message);
       // Render the OTP verification page with error message
+      const ref = req.query.ref;
+      const user_id = req.query.userId;
       return res.render("verify-otp", {
         email: email,
         errorMessage: "An error occurred. Please try again.",
+        ref,
+        user_id
       });
     }
 };
@@ -144,9 +212,13 @@ const resendOTP = async (req, res) => {
       };
   
       // Render the OTP verification page with success message
+      const ref = req.query.ref;
+      const user_id = req.query.userId;
       return res.render("verify-otp", {
         email,
         successMessage: "OTP has been resent successfully.",
+        ref,
+        user_id,
       });
     } catch (error) {
       console.error(error.message);
@@ -239,13 +311,11 @@ const loadShop = async (req, res) => {
       // Fetch distinct categories from the Product model
       // const categories = await Product.distinct('category')
       
-      const filteredCategories = await Product.find()
-      .populate({
-        path: 'category',
-        match: { isListed: true }})
-      .exec();
-      const categories = filteredCategories.filter(category => category.category !== null);
-      console.log(categories)
+      const categories = await Category.find({ isListed: true });
+      // console.log(categories)
+   
+      // const categories = filteredCategories.filter(category => category.category !== null);
+      // console.log(categories)
       const name =await Product.distinct('name');
       const price = await Product.distinct('price');
   
@@ -294,7 +364,7 @@ const loadShop = async (req, res) => {
         .exec();
 
         const products = filteredProducts.filter(product => product.category !== null);
-         console.log("Hi"+products)
+        //  console.log("Hi"+products)
   
       // Count total products for pagination
       const totalProducts = await Product.countDocuments(query);
@@ -339,9 +409,114 @@ const loadProductDetails = async (req, res) => {
 };
 
 
+const loadWishlist = async (req, res) => {
+  try {
+    // Extract user id from session
+    const userId = req.session.user_id;
+    // Fetch user's wishlist and populate product details
+    const userWishlist = await Wishlist.findOne({ user: userId }).populate(
+      "products.product"
+    );
+
+    // Render the wishlist page with user's wishlist
+    res.render("wishlist", { userWishlist });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const addToWishlist = async (req, res) => {
+  try {
+    // Extract product id from request body
+    const { productId } = req.body;
+    console.log(productId)
+    // Extract user id from session
+    const userId = req.session.user_id;
+
+    // Update or create user's wishlist and add product to it
+    const wishlist = await Wishlist.findOneAndUpdate(
+      { user: userId },
+      { $addToSet: { products: { product: productId } } },
+      { upsert: true, new: true }
+    );
+    console.log(wishlist);
+
+    // Respond with success message and updated wishlist
+    res.json({ message: "Product added to wishlist", wishlist });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const wishListToCart = async (req, res) => {
+  try {
+    // Extract product id from request body
+    const { productId } = req.body;
+    // Extract user id from session
+    const userId = req.session.user_id;
+
+    // Fetch product details
+    const product = await Product.findById(productId);
+    // Check if product is out of stock
+    if (!product || product.quantity <= 0) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "This product is out of stock and cannot be added to the cart.",
+        });
+    }
+
+    // Update or create user's cart and add product to it
+    const cart = await Cart.findOneAndUpdate(
+      { user: userId },
+      { $addToSet: { products: { product: productId } } },
+      { upsert: true, new: true }
+    );
+
+    // Respond with success message and updated cart
+    res.json({ message: "Product added to cart", cart });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const removeFromWishList = async (req, res) => {
+  try {
+    const user_id = req.session.user_id;
+    const { productId } = req.params;
+    // console.log(productId)
+
+    const wishList = await Wishlist.findOne({ user: user_id });
+
+    if (!wishList) {
+      return res.status(404).json({ message: "wishList not found" });
+    }
+
+    wishList.products = wishList.products.filter(
+      (prod) => prod.product.toString() !== productId
+    );
+    await wishList.save();
+
+    return res.json({ message: "Product successfully removed from Wish List" });
+  } catch (error) {
+    console.error("Failed to remove product from Wish List:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to remove product from cart" });
+  }
+};
+
+
+
+
 // Export all the defined functions
 module.exports = {
     userSignupLoad,
+    generateReferral,
     insertUser,
     userHome,
     verifyOTP,
@@ -351,5 +526,10 @@ module.exports = {
     getSignin,
     checkUserValid,
     logout,
+    loadWishlist,
+    wishListToCart,
+    addToWishlist,
+    removeFromWishList
     
-  };
+
+};

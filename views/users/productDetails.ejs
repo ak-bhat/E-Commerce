@@ -80,7 +80,7 @@
                      <div class="product-details-action">
                         <a href="#" class="btn-product btn-cart addToCartBtn" data-prodId="<%= product._id %>"><span>add to cart</span></a>
                         <div class="details-action-wrapper">
-                           <a href="#" class="btn-product btn-wishlist" title="Wishlist"><span>Add to Wishlist</span></a>
+                           <a href="#" class="btn-product btn-wishlist addToWishlistBtn" data-prodId="<%= product._id %>" title="Wishlist"><span>Add to Wishlist</span></a>
                            <!-- <a href="#" class="btn-product btn-compare" title="Compare"><span>Add to Compare</span></a> -->
                         </div>
                         <!-- End .details-action-wrapper -->
@@ -226,7 +226,7 @@
          <div class="col-6 justify-content-end">
             <div class="product-details-action">
                <a href="#" class="btn-product btn-cart addToCartBtn" data-prodId="<%= product._id %>"><span>add to cart</span></a>
-               <a href="#" class="btn-product btn-wishlist" title="Wishlist"><span>Add to Wishlist</span></a>
+               <a href="#" class="btn-product btn-wishlist addToWishlistBtn" data-prodId="<%= product._id %>" title="Wishlist"><span>Add to Wishlist</span></a>
             </div>
             <!-- End .product-details-action -->
          </div>
@@ -283,6 +283,35 @@
             console.log('add to cart not wokring');
         }
     }
+
+
+   const addToWishlistBtn = document.querySelectorAll('.addToWishlistBtn');
+   addToWishlistBtn.forEach((btn) => {
+   btn.addEventListener('click', addToWishlistFn);
+   });
+   
+   async function addToWishlistFn() {
+   try {
+      const productId = this.getAttribute('data-prodId');
+   
+      const response = await fetch('/addToWishlist', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ productId })
+      });
+   
+      const data = await response.json();
+      if (data.message) {
+          alert(data.message);
+      }
+   } catch (error) {
+      console.log('Add to wishlist not working');
+   }
+   }
+
+
 </script>
 
 <!-- jQuery (required for Elevate Zoom) -->

@@ -78,13 +78,8 @@
                               <tr class="table-secondary">
                                  <td style="color: #fff; background-color: #333;">
                                     <% if (order && order.shippingAddress) { %>
-                                    <p style="color: #fff;"><%= order.shippingAddress.firstName %> <%= order.shippingAddress.lastName %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.hcName %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.streetName %>,  <%= order.shippingAddress.city %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.state %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.pincode %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.email %></p>
-                                    <p style="color: #fff;"> <%= order.shippingAddress.mobile %></p>
+                                    <p style="color: #fff;"><%= order.shippingAddress %></p>
+                                    
                                     <% } else { %>
                                     <p>No shipping address available</p>
                                     <% } %>
@@ -116,13 +111,14 @@
                                  <tr>
                                     <td><%= index + 1 %></td>
                                     <% if (product.productId && product.productId.name) { %>
+                                       <input type="text" class="form-control" id="productId" name="productId" value="<%= product.productId._id %>" readonly style="color: #fff; background-color: #333;::placeholder { color: #555; }">
                                     <td><%= product.productId.name %></td>
                                     <% } else { %>
                                     <td>N/A</td>
                                     <% } %>
                                     <td>
-                                       <% if (product.productId && product.productId.image && product.productId.image.length > 0) { %>
-                                       <img src="data:<%= product.productId.image[0].contentType %>;base64,<%= product.productId.image[0].data.toString('base64') %>" alt="Product Image" style="max-width: 100px; max-height: 100px;" />
+                                       <% if (product.productId && product.productId.productImage && product.productId.productImage.length > 0) { %>
+                                       <img src="data:<%= product.productId.productImage[0].contentType %>;base64,<%= product.productId.productImage[0].data.toString('base64') %>" alt="Product Image" style="max-width: 100px; max-height: 100px;" />
                                        <% } else { %>
                                        No Image Available
                                        <% } %>
@@ -165,6 +161,7 @@
            body: JSON.stringify({
                orderId: document.getElementById('orderID').value,
                status: document.getElementById('exampleSelectStatus').value,
+               productId: document.getElementById('productId').value
            }),
        })
        .then(response => {

@@ -58,12 +58,7 @@
                                         </td>
                                         <td class="col-3">
                                             <% if (order.shippingAddress) { %>
-                                                <%= order.shippingAddress.firstName %> <%= order.shippingAddress.lastName %><br>
-                                                <%= order.shippingAddress.hcName %><br>
-                                                <%= order.shippingAddress.streetName %>, <%= order.shippingAddress.city %><br>
-                                                <%= order.shippingAddress.state %>, <%= order.shippingAddress.pincode %><br>
-                                                <%= order.shippingAddress.mobile %><br>
-                                                <%= order.shippingAddress.email %><br>
+                                                <%= order.shippingAddress %> 
                                             <% } else { %>
                                                 No Shipping Address Found
                                             <% } %>

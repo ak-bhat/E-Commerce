@@ -107,17 +107,20 @@
                   </div>
                   <!-- End .header-left -->
                   <div class="header-right">
-                     <div class="header-search">
+                     <!-- <div class="header-search">
                         <a href="#" class="search-toggle" role="button" title="Search"><i class="icon-search"></i></a>
-                        <form action="#" method="get">
+                        <form action="/search" method="get" id="searchForm">
                            <div class="header-search-wrapper">
                               <label for="q" class="sr-only">Search</label>
                               <input type="search" class="form-control" name="q" id="q" placeholder="Search in..." required>
+                              <button type="submit" class="search-toggle" title="Search">
+                                 <i class="icon-search"></i>
+                             </button>
                            </div>
-                           <!-- End .header-search-wrapper -->
+                            End .header-search-wrapper 
                         </form>
                      </div>
-                     <!-- End .header-search -->
+                     End .header-search -->
                      <div class="dropdown compare-dropdown">
                         <a href="/userProfile" class="dropdown-toggle" role="button" >
                         <i class="icon-user"></i>
@@ -249,9 +252,22 @@
                                                 <a href="#"><%= product.category.categoryName %></a>
                                              </div>
                                              <h3 class="product-title"><a href="/productDetails/<%= product._id %>"><%= product.name %></a></h3>
+                                          <!-- <div class="product-price">
+                                             <% if (product.quantity === 0) { %>
+                                                <span class="out-price">Out Of Stock</span>
+                                             <% } else { %>
+                                                <span class="price">₹<%= product.price.toFixed(2) %></span>
+                                             <% } %>
+                                          </div> -->
                                           <div class="product-price">
                                              <% if (product.quantity === 0) { %>
                                                 <span class="out-price">Out Of Stock</span>
+                                             <% } else if (product.catOfferPrice !== null) { %>
+                                                <span class="new-price">Now ₹<%= product.catOfferPrice.toFixed(2) %></span>
+                                                <span class="old-price">₹<%= product.price.toFixed(2) %></span>
+                                             <% } else if (product.offerPrice !== null) { %>
+                                                <span class="new-price">Now ₹<%= product.offerPrice.toFixed(2) %></span>
+                                                <span class="old-price">₹<%= product.price.toFixed(2) %></span>
                                              <% } else { %>
                                                 <span class="price">₹<%= product.price.toFixed(2) %></span>
                                              <% } %>
@@ -341,8 +357,8 @@
                                        <% categories.forEach(category => { %>
                                        <div class="filter-item">
                                           <div class="custom-control custom-checkbox">
-                                             <input type="checkbox" class="custom-control-input category-checkbox" id="cat-<%= category %>" name="category" value="<%= category %>">
-                                             <label class="custom-control-label" for="cat-<%= category %>"><%= category.category.categoryName %></label>
+                                             <input type="checkbox" class="custom-control-input category-checkbox" id="cat-<%= category %>" name="category" value="<%= category._id %>">
+                                             <label class="custom-control-label" for="cat-<%= category %>"><%= category.categoryName %></label>
                                           </div>
                                        </div>
                                        <% }); %>

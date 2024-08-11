@@ -20,7 +20,7 @@ const userProfile = async (req, res) => {
       
     }else{
        const googleUserId = req.session.passport.user;
-      console.log(googleUserId)
+      // console.log(googleUserId)
       const user = await users.findById(googleUserId);
       
     // Fetch addresses associated with the user

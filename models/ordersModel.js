@@ -7,8 +7,7 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
   shippingAddress: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "address",
+    type: String,
     required: true,
   },
   products: [

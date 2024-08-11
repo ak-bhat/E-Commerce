@@ -5,6 +5,9 @@ const category = require("../models/categoryModel");
 const { Order } = require("../models/ordersModel");
 const express = require('express');
 const app = express();
+const PDFDocument = require("pdfkit");
+const Coupon = require("../models/couponModel");
+const Offer = require("../models/offerModel");
 
 
 // CODES RELATED TO ADMIN LOGIN, LOGOUT AND REL ADMIN
@@ -66,6 +69,351 @@ const logout = async (req, res) => {
   }
 };
 
+
+// DASHBOARD OF ADMIN
+
+
+const loadHome = async (req, res) => {
+  try {
+    const userCount = await User.countDocuments({ is_admin: 0 });
+    const averageUsers = userCount / 8;
+
+    let iconClass = "mdi mdi-arrow-bottom-left";
+    if (averageUsers >= 1) {
+      iconClass = "mdi mdi-arrow-top-right";
+    }
+
+    const userData = await User.findById(req.session.admin_id);
+
+    const revenueResult = await Order.aggregate([
+      { $match: { OrderStatus: "Delivered" } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+
+    const totalRevenue =
+      revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayShippedOrders = await Order.find({
+      updatedAt: { $gte: today },
+      OrderStatus: "Delivered",
+    }).populate("products.productId");
+
+    let dailyIncome = 0;
+    todayShippedOrders.forEach((order) => {
+      if (order.updatedAt.getDate() === today.getDate()) {
+        dailyIncome += order.totalAmount;
+      }
+    });
+
+    const pendingOrdersCount = await Order.countDocuments({
+      OrderStatus: "Pending",
+    });
+
+    const paymentMethodCounts = await Order.aggregate([
+      { $match: { OrderStatus: "Delivered" } },
+      {
+        $group: {
+          _id: "$paymentMethod",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const paymentMethods = {};
+    paymentMethodCounts.forEach((method) => {
+      if (method._id === "Online Payment") {
+        paymentMethods.OnlinePayment = method.count;
+      } else if (method._id === "Cash on Delivery") {
+        paymentMethods.CashOnDelivery = method.count;
+      }
+    });
+
+    let orders = [];
+    if (req.query.startDate && req.query.endDate) {
+      orders = await Order.find({
+        orderDate: {
+          $gte: new Date(req.query.startDate),
+          $lte: new Date(req.query.endDate),
+        },
+      })
+        .populate("userId", "firstName lastName")
+        .populate("products.productId", "name  quantity");
+    }
+
+    const startDate = req.query.startDate || "";
+    const endDate = req.query.endDate || "";
+
+    const shippedOrdersToday = await Order.find({
+      updatedAt: { $gte: today },
+      OrderStatus: "Delivered",
+    });
+
+    const amountsCollectedToday = [];
+    let runningTotal = 0;
+    shippedOrdersToday.forEach((order) => {
+      if (order.updatedAt.getDate() === today.getDate()) {
+        runningTotal += order.totalAmount;
+        amountsCollectedToday.push(runningTotal);
+      }
+    });
+
+    const ordersGroupedByDay = shippedOrdersToday.reduce((acc, order) => {
+      const orderDate = order.updatedAt.toISOString().split("T")[0];
+      if (!acc[orderDate]) {
+        acc[orderDate] = {
+          totalAmount: 0,
+          orderCount: 0,
+        };
+      }
+      acc[orderDate].totalAmount += order.totalAmount;
+      acc[orderDate].orderCount++;
+      return acc;
+    }, {});
+
+    const labels = Object.keys(ordersGroupedByDay);
+    const amounts = labels.map((date) => ordersGroupedByDay[date].totalAmount);
+    const orderCounts = labels.map(
+      (date) => ordersGroupedByDay[date].orderCount
+    );
+
+    const topSoldProducts = await Order.aggregate([
+      { $match: { OrderStatus: "Delivered" } },
+      { $unwind: "$products" },
+      {
+        $group: {
+          _id: "$products.productId",
+          totalSold: { $sum: "$products.quantity" },
+        },
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 6 },
+    ]);
+
+    const productIds = topSoldProducts.map((product) => product._id);
+    const soldQuantities = topSoldProducts.map((product) => product.totalSold);
+
+    const topProductNames = await Product.find(
+      { _id: { $in: productIds } },
+      "name"
+    );
+
+    const currentYear = new Date().getFullYear();
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    const monthlySales = [];
+
+    for (let i = 0; i < 12; i++) {
+      const startDate = new Date(currentYear, i, 1);
+      const endDate = new Date(currentYear, i + 1, 0);
+
+      const result = await Order.aggregate([
+        {
+          $match: {
+            orderDate: { $gte: startDate, $lte: endDate },
+            OrderStatus: "Delivered",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            productsSold: { $sum: { $size: "$products" } },
+          },
+        },
+      ]);
+
+      const productsSold = result.length > 0 ? result[0].productsSold : 0;
+      monthlySales.push({ month: monthNames[i], productsSold });
+    }
+
+    res.render("home", {
+      admin: userData,
+      userCount,
+      averageUsers,
+      totalRevenue,
+      iconClass,
+      pendingOrdersCount,
+      dailyIncome,
+      paymentMethods,
+      orders,
+      startDate,
+      endDate,
+      amountsCollectedToday: JSON.stringify(amountsCollectedToday),
+      labels: JSON.stringify(labels),
+      amounts: JSON.stringify(amounts),
+      orderCounts: JSON.stringify(orderCounts),
+      topProductNames: JSON.stringify(topProductNames),
+      soldQuantities: JSON.stringify(soldQuantities),
+      monthlySales: JSON.stringify(monthlySales),
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const salesReport = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const orders = await Order.find({
+      orderDate: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    })
+      .populate("userId", "firstName secondName")
+      .populate("products.productId", "name quantity category");
+
+    const doc = new PDFDocument();
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="Sales Report.pdf"'
+    );
+    res.setHeader("Content-Type", "application/pdf");
+    doc.pipe(res);
+
+    const borderOffset = 28.35; // 1 cm in points
+
+    const x = borderOffset;
+    const y = borderOffset;
+    const width = doc.page.width - 2 * borderOffset;
+    const height = doc.page.height - 2 * borderOffset;
+    doc.lineWidth(1).rect(x, y, width, height).stroke("black");
+
+    doc.on("pageAdded", () => {
+      const x = borderOffset;
+      const y = borderOffset;
+      const width = doc.page.width - 2 * borderOffset;
+      const height = doc.page.height - 2 * borderOffset;
+
+      doc.lineWidth(1).rect(x, y, width, height).stroke("black");
+    });
+
+    doc.fontSize(18).text("Sales Report", { align: "center", underline: true });
+    doc.moveDown(0.2);
+    doc.fontSize(10).text(`Gravity Team`, { align: "center" });
+    doc.moveDown(0.2);
+    doc
+      .fontSize(10)
+      .text(
+        `Report covering the period from ${new Date(
+          startDate
+        ).toDateString()} to ${new Date(endDate).toDateString()}.`,
+        { align: "center" }
+      );
+    doc.moveDown(2);
+
+    const ordersCount = orders.length;
+    doc.fontSize(12).text(`Total sales volume: ${ordersCount}`);
+    doc.moveDown(1);
+    const totalRevenue = orders.reduce(
+      (acc, order) => acc + order.totalAmount,
+      0
+    );
+    doc
+      .fontSize(12)
+      .text(
+        `Total revenue generated from these orders: ${totalRevenue.toFixed(2)}`
+      );
+    doc.moveDown(1);
+
+    // doc.fontSize(12).text('Sales categorized by type');
+    // categories.forEach(category => {
+    //   const categoryProductsCount = orders.reduce((acc, order) => {
+    //     const categoryProducts = order.products.filter(product => product.productId.category === category);
+    //     return acc + (categoryProducts.length > 0 ? categoryProducts.reduce((sum, product) => sum + product.quantity, 0) : 0);
+    //   }, 0);
+    //   doc.fontSize(11).text(`${category}: ${categoryProductsCount}`);
+    // });
+
+    // doc.moveDown(1);
+
+    const productSales = {};
+    orders.forEach((order) => {
+      order.products.forEach((product) => {
+        const productName = product.productId.name;
+        if (productSales[productName]) {
+          productSales[productName] += product.quantity;
+        } else {
+          productSales[productName] = product.quantity;
+        }
+      });
+    });
+    const maxSoldProduct = Object.keys(productSales).reduce((a, b) =>
+      productSales[a] > productSales[b] ? a : b
+    );
+    const maxSoldProductCount = productSales[maxSoldProduct];
+
+    doc
+      .fontSize(12)
+      .text(
+        `Maximum sold product: ${maxSoldProduct} (${maxSoldProductCount} units)`
+      );
+
+    doc.moveDown(3);
+
+    doc.fontSize(16).text("Comprehensive order breakdown", {
+      align: "center",
+      underline: true,
+    });
+    doc.fontSize(12).text(`Detailed order reports`, { align: "center" });
+
+    doc.moveDown(2);
+
+    if (orders && orders.length > 0) {
+      orders.forEach((order, index) => {
+        doc.text(`Order No: ${index + 1}`);
+        doc.text(`Order ID: ${order._id}`);
+        doc.text(`User: ${order.userId.firstName} ${order.userId.secondName}`);
+        doc.text(
+          `Ordered Date: ${order.orderDate.toDateString()} ${order.orderDate.toLocaleTimeString()}`
+        );
+
+        order.products.forEach((product) => {
+          doc.text(`Product: ${product.productId.name}`);
+          doc.text(`Quantity: ${product.quantity}`);
+        });
+
+        doc.text(`Total Amount: ${order.totalAmount}`);
+        doc.text(`Payment Method: ${order.paymentMethod}`);
+        doc.text(`Payment Status: ${order.paymentStatus}`);
+        doc.text(`Order Status: ${order.OrderStatus}`);
+
+        doc.moveDown();
+      });
+    } else {
+      doc.text("No orders found for the selected date range.");
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
 // USER MANAGEMENT
 
 const adminUsers = async (req, res) => {
@@ -86,7 +434,7 @@ const blockUser = async (req, res) => {
 
     if (user) {
       user.is_blocked = user.is_blocked === 0 ? 1 : 0;
-      await user.save();
+      
       
       if(user.is_blocked===1){
         const sessionID = user.session;
@@ -96,6 +444,7 @@ const blockUser = async (req, res) => {
           }
         });
       }
+      await user.save();
       res.redirect("/admin/users");
     } else {
       res.status(404).send("User not found");
@@ -218,15 +567,131 @@ const saveCategory = async (req, res) => {
 const getProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    console.log(products)
+    const offers = await Offer.find();
+    // console.log(products)
+
     res.render("products", {
       Product: products,
+      offers: offers,
     });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching products");
   }
 };
+
+
+const applyOffer = async (req, res) => {
+  const { productId } = req.params;
+  const { offerId } = req.body;
+
+  try {
+    const product = await Product.findById(productId);
+    const selectedOffer = await Offer.findById(offerId);
+
+    if (product && selectedOffer) {
+      const discountedPrice =
+        product.price - product.price * (selectedOffer.offerDiscount / 100);
+
+      product.offer = selectedOffer._id;
+      product.offerPrice = discountedPrice;
+      await product.save();
+
+      res.status(200).send("Offer applied successfully");
+    } else {
+      res.status(404).send("Product or offer not found");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error applying offer");
+  }
+};
+
+
+const removeProductOffer = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const product = await Product.findById(productId);
+
+    if (product && product.offer) {
+      product.offer = null;
+      product.offerPrice = null;
+      await product.save();
+
+      res.status(200).send("Offer removed successfully");
+    } else {
+      res.status(404).send("Product or offer not found");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error removing offer");
+  }
+};
+
+const applyCategoryOffer = async (req, res) => {
+  try {
+    const { category, offerDiscount } = req.body;
+
+    const products = await Product.find({ category });
+
+    for (const product of products) {
+      if (!product.offer) {
+        product.catOfferPrice =
+          product.price - product.price * (offerDiscount / 100);
+
+        const offer = await Offer.findOne({ offerDiscount });
+        if (offer) {
+          product.offer = offer._id;
+        }
+
+        await product.save();
+      }
+    }
+
+    res
+      .status(200)
+      .send("Category offer applied successfully to eligible products.");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error applying category offer");
+  }
+};
+
+
+const removeCategoryOffer = async (req, res) => {
+  try {
+    const productId = req.params.productId;
+
+    const product = await Product.findById(productId);
+
+    product.catOfferPrice = null;
+    product.offer = null;
+    await product.save();
+
+    const productsWithSameCategory = await Product.find({
+      category: product.category,
+    });
+
+    for (const otherProduct of productsWithSameCategory) {
+      if (otherProduct._id.toString() !== productId) {
+        otherProduct.catOfferPrice = null;
+        otherProduct.offer = null;
+        await otherProduct.save();
+      }
+    }
+
+    res
+      .status(200)
+      .send(
+        "Category offer removed successfully from all products with the same category."
+      );
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error removing category offer");
+  }
+};
+
 
 const addProduct = async (req, res) => {
   try {
@@ -433,7 +898,7 @@ const deleteProductImage = async (req, res) => {
 
 const loadOrder = async (req, res) => {
   try {
-    const orders = await Order.find().populate("products.productId").lean().sort({orderDate:-1});  //converts the Mongoose documents into plain JavaScript objects
+    const orders = await Order.find().populate("products.productId").lean().sort({_id:-1});  //converts the Mongoose documents into plain JavaScript objects
 
     res.render("ordersPage", { orders });
   } catch (error) {
@@ -461,11 +926,32 @@ const manageOrder = async (req, res) => {
 
 const updateOrderStatus = async (req, res) => {
   try {
-    const { orderId, status } = req.body;
-    // console.log(status)
+    const { orderId, status, productId } = req.body;
+    if(status=="Pending"){
+      // await Order.findByIdAndUpdate(orderId, { OrderStatus: status, paymentStatus:"Pending" });
 
-    await Order.findByIdAndUpdate(orderId, { OrderStatus: status });
+      const order = await Order.findById(orderId);
+      order.OrderStatus=status;
+      order.paymentStatus="Pending"
+      // console.log(order)
 
+      const productIndex = order.products.findIndex(
+        (item) => item.productId.toString() === productId
+      );
+    // console.log(productIndex)
+    const productInOrder = order.products[productIndex];
+    const product = await Product.findById(productInOrder.productId);
+   
+
+    const updatedQuantity = product.quantity - productInOrder.quantity;
+    await Product.findByIdAndUpdate(product._id, { quantity: updatedQuantity });
+
+    order.products[productIndex].ProductOrderStatus = "Pending";
+    await order.save();
+
+    }else{
+      await Order.findByIdAndUpdate(orderId, { OrderStatus: status });
+    }
     res.json({ message: "Order status  successfully" });
   } catch (error) {
     console.log(error.message);
@@ -491,11 +977,15 @@ const updateProductOrderStatus = async (req, res) => {
     }
 
     productToUpdate.ProductOrderStatus = status;
-
+    console.log("Hi")
     const allProducts = order.products;
     const anyPendingProduct = allProducts.some(
       (product) => product.ProductOrderStatus === "Pending"
     );
+
+    // if (status==='Cancelled') {
+      
+    // }
 
     order.paymentStatus = anyPendingProduct ? "Pending" : "Success";
 
@@ -510,12 +1000,210 @@ const updateProductOrderStatus = async (req, res) => {
 
 
 
+//CODE RELATED TO COUPON
+
+
+const loadAddCoupon = async (req, res) => {
+  try {
+    res.render("addCoupon");
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+
+const addCoupon = async (req, res) => {
+  try {
+    const {
+      couponCode,
+      couponName,
+      discountAmountDropdown,
+      customDiscountAmount,
+      validFrom,
+      validTo,
+      minimumSpend,
+    } = req.body;
+
+    const selectedDiscountAmount = customDiscountAmount
+      ? parseInt(customDiscountAmount)
+      : parseInt(discountAmountDropdown);
+
+    const existingCoupon = await Coupon.findOne({ code: couponCode });
+
+    if (existingCoupon) {
+      const errorMessage =
+        "Coupon code already exists. Please generate a new one.";
+      return res.redirect(
+        "/admin/addCoupon?error=" + encodeURIComponent(errorMessage)
+      );
+    }
+
+    const newCoupon = new Coupon({
+      code: couponCode,
+      couponName,
+      discountAmount: selectedDiscountAmount,
+      validFrom,
+      validTo,
+      minimumSpend,
+    });
+
+    await newCoupon.save();
+
+    const successMessage = "Coupon added successfully";
+    res.redirect(
+      "/admin/addCoupon?success=" + encodeURIComponent(successMessage)
+    );
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const loadCoupon = async (req, res) => {
+  try {
+    const coupons = await Coupon.find({});
+    const currentDate = new Date();
+    coupons.forEach((coupon) => {
+      coupon.isValid = currentDate <= coupon.validTo;
+    });
+
+    const successMessage = req.query.success;
+    const errorMessage = req.query.error;
+
+    res.render("coupon", { coupons, successMessage, errorMessage });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const editCoupon = async (req, res) => {
+  try {
+    const {
+      couponId,
+      couponName,
+      discountAmount,
+      validFrom,
+      validTo,
+      minimumSpend,
+    } = req.body;
+
+    // Validate and update the coupon in the database
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      couponId,
+      {
+        couponName,
+        discountAmount,
+        validFrom,
+        validTo,
+        minimumSpend,
+      },
+      { new: true } // Return the updated document
+    );
+
+    res.redirect("/coupon?success=Coupon updated successfully");
+  } catch (error) {
+    console.error(error);
+    res.redirect("/coupon?error=Failed to update coupon");
+  }
+};
+
+
+const deleteCoupon = async (req, res) => {
+  try {
+    const { couponId } = req.body;
+
+    if (!couponId) {
+      return res.status(400).send("Invalid coupon ID");
+    }
+
+    const deletedCoupon = await Coupon.findByIdAndDelete(couponId);
+
+    if (!deletedCoupon) {
+      return res.status(404).send("Coupon not found");
+    }
+
+    res.redirect(
+      "/admin/coupon?success=" +
+      encodeURIComponent("Coupon deleted successfully")
+    );
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+//CODES RELATED TO OFFERS
+
+
+const loadOffers = async (req, res) => {
+  try {
+    const offers = await Offer.find();
+    res.render("offers", { offers });
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+
+const addOffer = async (req, res) => {
+  try {
+    const { offerName, offerDiscount, expiryDate } = req.body;
+
+    if (!offerName || !offerDiscount || !expiryDate) {
+      return res.status(400).send("Please provide all required fields.");
+    }
+
+    const newOffer = new Offer({
+      offerName,
+      offerDiscount,
+      expiryDate,
+    });
+
+    await newOffer.save();
+
+    res.redirect("/admin/offers");
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+const removeOffer = async (req, res) => {
+  try {
+    const offerId = req.params.id;
+    // console.log(offerId)
+
+    const existingOffer = await Offer.findById(offerId);
+    // console.log(existingOffer)
+    if (!existingOffer) {
+      return res.status(404).send("Offer not found.");
+    }
+
+    await existingOffer.deleteOne();
+
+    res.redirect("/admin/offers");
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+
 
 // EXPORT
 
 module.exports = {
   verifyLogin,
   logout,
+  loadHome,
+  salesReport,
+
   adminUsers,
   blockUser,
   loadLogin,
@@ -541,5 +1229,22 @@ module.exports = {
   loadOrder,
   manageOrder,
   updateOrderStatus,
-  updateProductOrderStatus
+  updateProductOrderStatus,
+
+  loadAddCoupon,
+  loadCoupon,
+  addCoupon,
+  deleteCoupon,
+
+  loadOffers,
+  addOffer,
+  removeOffer,
+  applyOffer,
+  removeProductOffer,
+
+  applyCategoryOffer,
+  removeCategoryOffer,
+
+  editCoupon,
+
 };
