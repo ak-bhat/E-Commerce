@@ -63,7 +63,7 @@
                            <a href="#">Links</a>
                            <ul>
                               <li><a href="tel:#"><i class="icon-phone"></i>Call: +0123 456 789</a></li>
-                              <!-- <li><a href="/wishlist"><i class="icon-heart-o"></i>My Wishlist </a></li> -->
+                              <li><a href="/wishlist"><i class="icon-heart-o"></i>My Wishlist </a></li>
                               <li><a href="/about">About Us</a></li>
                               <li><a href="/contact">NEED HELP</a></li>
                            </ul>
@@ -235,7 +235,7 @@
                                                 <img src="data:<%= product.productImage[0].contentType %>;base64, <%= product.productImage[0].data.toString('base64') %>" alt="Product image" class="product-image">
                                              </a>
                                              <div class="product-action-vertical">
-                                                <a href="#" class="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
+                                                <a href="#" class="btn-product-icon btn-wishlist addToWishlistBtn btn-expandable" data-prodId="<%= product._id %>" title="Wishlist"><span>add to wishlist</span></a>
                                                 <a href="/productDetails/<%= product._id %>" class="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
                                              </div>
                                              <div class="product-action">
@@ -564,6 +564,37 @@
             console.log('add to cart not wokring');
         }
     }
+
+   const addToWishlistBtn = document.querySelectorAll('.addToWishlistBtn');
+   addToWishlistBtn.forEach((btn) => {
+   btn.addEventListener('click', addToWishlistFn);
+   });
+   
+   async function addToWishlistFn() {
+   try {
+      const productId = this.getAttribute('data-prodId');
+   
+      const response = await fetch('/addToWishlist', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ productId })
+      });
+   
+      const data = await response.json();
+      if (data.message) {
+          alert(data.message);
+      }
+   } catch (error) {
+      console.log('Add to wishlist not working');
+   }
+   }
+
+
+
+
+
        </script>
       <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
       <!-- Add this script at the end of your EJS file or in a separate script file -->

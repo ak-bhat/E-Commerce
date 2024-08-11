@@ -438,17 +438,25 @@ const addToWishlist = async (req, res) => {
   try {
     // Extract product id from request body
     const { productId } = req.body;
-    console.log(productId)
+    // console.log(productId)
     // Extract user id from session
     const userId = req.session.user_id;
-
+    const wishlist = await Wishlist.findOne({ user: userId });
     // Update or create user's wishlist and add product to it
-    const wishlist = await Wishlist.findOneAndUpdate(
-      { user: userId },
-      { $addToSet: { products: { product: productId } } },
-      { upsert: true, new: true }
-    );
-    console.log(wishlist);
+    // const wishlist = await Wishlist.findOneAndUpdate(
+    //   { user: userId },
+    //   { $addToSet: { products: { product: productId } } },
+    //   { upsert: true, new: true }
+    // );
+    // Check if the product is already in the wishlist
+    const productExists = wishlist.products.some((item) => item.product.toString() === productId);
+    if (productExists) {
+      return res.status(400).json({ message: 'Product already in wishlist' });
+    }
+
+     // Add the product to the wishlist if not already present
+     wishlist.products.push({ product: productId });
+     await wishlist.save();
 
     // Respond with success message and updated wishlist
     res.json({ message: "Product added to wishlist", wishlist });

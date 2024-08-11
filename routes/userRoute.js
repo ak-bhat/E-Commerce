@@ -76,6 +76,7 @@ userRoute.post('/addShippingDetails', auth.isLogin, userProControl.addShippingDe
 userRoute.get('/loadOrderPlaced',auth.isLogin , orderControl.loadOrderPlaced);
 userRoute.post('/api/payment/verify',auth.isLogin,orderControl.verifyOrder);
 
+userRoute.post('/getCoupon', orderControl.getCoupon);
 
 userRoute.post('/storeAppliedCoupon', (req, res) => {
   const { couponCode } = req.body;
