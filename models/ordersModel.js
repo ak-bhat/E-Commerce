@@ -25,6 +25,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      productPaymentStatus: {
+        type: String,
+        require: true,
+      },
       returnOrderStatus: {
         status: {
           type: String,
@@ -34,7 +38,7 @@ const orderSchema = new mongoose.Schema({
         },
         date: {
           type: Date,
-        },
+        }
       },
     },
   ],

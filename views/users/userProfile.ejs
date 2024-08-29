@@ -193,9 +193,20 @@
                               <div class="tab-pane fade" id="tab-password" role="tabpanel" aria-labelledby="tab-password-link">
                                  <form id="changePasswordForm" action="/change-password" method="POST">
                                     <label>Current password</label>
-                                    <input type="password" class="form-control" name="currentPassword">
+                                    <div class="input-group mb-3">
+                                       <input type="password" class="form-control" name="currentPassword" id="currentPassword">
+                                       <div class="input-group-append">
+                                         <span class="input-group-text" id="toggleCurrentPassword" style="height: 40px;"><i class="icon-eye"></i></span>
+                                       </div>
+                                     </div>
+                                    
                                     <label>New password</label>
-                                    <input type="password" class="form-control" id="newPassword" name="newPassword">
+                                    <div class="input-group mb-3">
+                                       <input type="password" class="form-control" id="newPassword" name="newPassword">
+                                       <div class="input-group-append">
+                                          <span class="input-group-text" id="toggleNewPassword" style="height: 40px;"><i class="icon-eye"></i></span>
+                                       </div>
+                                    </div>
                                     <div id="passwordCriteria" style="font-size: 0.9em; color: red; margin-top: 5px;"></div>
                                     <label>Confirm new password</label>
                                     <input type="password" class="form-control mb-2" id="confirmPassword" name="confirmPassword">
@@ -378,7 +389,7 @@
                                    <h5>Wallet Details</h5>
                                  </div>
                                  <div>
-                                   <button class="btn btn-outline-primary">Wallet Balance <%= user.wallet.balance %></button>
+                                   <button class="btn btn-outline-primary">Wallet Balance <%= user.wallet.balance.toFixed(2) %></button>
                                    <h6 style="margin-top: 10px;">Transaction History</h6>
                                    <table class="table">
                                      <thead>
@@ -391,7 +402,7 @@
                                      <tbody>
                                        <% user.wallet.history.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(transaction => { %>
                                           <tr style="color: <%= transaction.type === 'Credit' ? 'green' : 'red' %>;">                                            <td><%= transaction.type %></td>
-                                            <td><%= transaction.amount %></td>
+                                            <td><%= transaction.amount.toFixed(2) %></td>
                                             <td><%= transaction.date %></td>
                                           </tr>
                                         <% }) %>
@@ -625,6 +636,39 @@ document.addEventListener("DOMContentLoaded", function () {
         window.onload = function () {
             hideAlerts();
         };
+
+
+
+
+        function togglePasswordVisibility(toggleId, inputId) {
+  const toggle = document.getElementById(toggleId);
+  const input = document.getElementById(inputId);
+  const icon = toggle.querySelector('i');
+
+  toggle.addEventListener('click', function() {
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    }
+  });
+}
+
+togglePasswordVisibility('toggleCurrentPassword', 'currentPassword');
+togglePasswordVisibility('toggleNewPassword', 'newPassword');
+togglePasswordVisibility('toggleConfirmPassword', 'confirmPassword');
+
+
+
+
+
+
+
+
     </script>
 
 <%- include('../layouts/footer') %>

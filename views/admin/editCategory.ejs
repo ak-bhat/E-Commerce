@@ -16,22 +16,64 @@
                         <%= errorMessage %>
                      </div>
                      <% } %>
-                     <form id="categoryForm" class="forms-sample" action="/admin/updateCategory/<%= category._id %>" method="post">
+                     <form id="categoryForm" class="forms-sample" action="/admin/updateCategory/<%= category._id %>" method="post" onsubmit="return validateForm()">
                         <!-- Input for category name -->
                         <div class="form-group">
                            <label for="exampleInputName1">Name</label>
                            <input type="text" class="form-control" id="exampleInputName1" placeholder="Name" name="categoryName" value="<%= category.categoryName %>">
+                           <div id="nameError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <!-- Textarea for category description -->
                         <div class="form-group">
                            <label for="exampleTextarea1">Description</label>
                            <textarea class="form-control" id="exampleTextarea1" rows="4" name="description"><%= category.description %></textarea>
+                           <div id="descriptionError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <!-- Submit and Cancel buttons -->
                         <button type="submit" class="btn btn-outline-primary me-2" style="height: 35px">Submit</button>
                         <a href="/admin/category" class="btn btn-outline-secondary" style="height: 35px">Cancel</a>
                      </form>
                      <!-- End form for updating category -->
+                     <script>
+                        function validateForm() {
+                        // Get the form elements
+                        const categoryName = document.getElementById('exampleInputName1').value.trim();
+                        const description = document.getElementById('exampleTextarea1').value.trim();
+                     
+                        // Error message divs
+                        const nameError = document.getElementById('nameError');
+                        const descriptionError = document.getElementById('descriptionError');
+                     
+                        // Reset error messages
+                        nameError.textContent = '';
+                        descriptionError.textContent = '';
+                     
+                        let isValid = true;
+                     
+                        // Validate category name
+                        if (categoryName === '') {
+                           nameError.textContent = 'Category name is required';
+                           isValid = false;
+                        } else if (categoryName.length < 3) {
+                           nameError.textContent = 'Category name must be at least 3 characters long';
+                           isValid = false;
+                        }
+                     
+                        // Validate description
+                        if (description === '') {
+                           descriptionError.textContent = 'Description is required';
+                           isValid = false;
+                        } else if (description.length < 5) {
+                           descriptionError.textContent = 'Description must be at least 5 characters long';
+                           isValid = false;
+                        }
+                     
+                        // Prevent form submission if not valid
+                        return isValid;
+                     }
+                     
+                     
+                     </script>
                   </div>
                </div>
             </div>

@@ -31,6 +31,8 @@
                                             <th>Quantity</th>
                                             <th>Order Date</th>
                                             <th>Images</th>
+                                            <th> Price </th>
+                                            <th> Offer Price </th>
                                             <th>Payment Status</th>
                                             <th>Cancel Order</th>
                                             <th>Return Order</th>
@@ -50,11 +52,19 @@
                                                             No Image Available
                                                         <% } %>
                                                     </td>
-                                                    <td style="color: <%= orderDetails.paymentStatus
-                                                    === 'Cancelled' ? 'red' : 'green' %>;">
-                                                        <%= orderDetails.paymentStatus %>
+                                                    <td><%= product.productId.price %></td>
+                                                    <td><% if (product.productId.catOfferPrice) {%>
+                                                        <%= product.productId.catOfferPrice %>
+                                                        <% } else if (product.productId.offerPrice) { %>
+                                                            <%= product.productId.catOfferPrice %>
+                                                        <% } else  { %>
+                                                            No offer 
+                                                        <% } %>
                                                     </td>
-                                                    
+                                                    <td style="color: <%= product.productPaymentStatus
+                                                    === 'Cancelled' || product.productPaymentStatus === 'Failed' ? 'red' : 'green' %>;">
+                                                        <%= product.productPaymentStatus %>
+                                                    </td> 
                                                   
                                                     <td>
                                                         <% if (product.ProductOrderStatus === 'Cancelled' || orderDetails.OrderStatus === 'Delivered' || orderDetails.OrderStatus === 'Returned') { %>
@@ -66,7 +76,7 @@
                                                         <% } %>
                                                     </td>
                                                     <td>
-                                                        <% if (product.ProductOrderStatus === 'Cancelled' || orderDetails.OrderStatus === 'Shipped' || orderDetails.OrderStatus === 'Pending') { %>
+                                                        <% if (product.ProductOrderStatus === 'Cancelled' || orderDetails.OrderStatus === 'Shipped' || orderDetails.OrderStatus === 'Pending' || product.ProductOrderStatus === 'Pending - Failed Payment') { %>
                                                             <button disabled class="btn-outline-secondary">
                                                                 Not Available
                                                             </button>
@@ -74,16 +84,18 @@
                                                             <button disabled class="btn-outline-secondary">
                                                                 Returned
                                                             </button>
+                                                        <% } else if (orderDetails.OrderStatus === 'Delivered') { %>
+                                                            <button onclick="requestReturn('<%= orderDetails._id %>', '<%= product._id %>')" class="btn-return btn-outline-warning">Request Return</button>
+                                                        <% } else if (orderDetails.OrderStatus === 'Return Requested') { %>
+                                                            <button disabled class="btn-outline-secondary">
+                                                                Returned Requested
+                                                            </button>
                                                         <% } else { %>
                                                             <button onclick="returnProduct('<%= orderDetails._id %>', '<%= product._id %>')" class="btn-return btn-outline-warning">Return</button>
+                                                            <span style="color: red;">Request Approved Click to Return</span>
                                                         <% } %>
-                                                    </td>
-                                                    
-                                                    
-                                                    
-                                                    
-                                                   
-                                                    
+                                                    </td>                      
+
                                                 </tr>
                                             <% }); %>
                                     
@@ -94,6 +106,11 @@
 
 	                			
 	                		</div>
+                            
+                             <!-- Download button for the sales report -->
+                            <a href="/generate-invoice?orderId=<%= orderDetails.id%> %>" target="_blank">
+                                <button class="btn btn-success" style="margin-top: 15px; padding: 10px;">Download Invoice</button>
+                            </a>
 	                		
 	                	</div><!-- End .row -->
 	                </div><!-- End .container -->
@@ -106,8 +123,28 @@
 
     <%- include('../layouts/footer') %>
 
+
       
 <script>
+
+function requestReturn(orderId, productId) {
+    fetch(`/requestReturn/${orderId}/${productId}`, {
+        method: 'POST', // or 'GET', depending on your API
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        // Include any additional data in the body if necessary
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+        window.location.reload();
+        // Handle the response from the server (e.g., show a message to the user)
+    })
+    .catch((error) => {
+        console.log('Error:', error);
+    });
+}
 
 
 

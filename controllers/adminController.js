@@ -2,12 +2,15 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const Product = require("../models/productsModel");
 const category = require("../models/categoryModel");
+const Category = require("../models/categoryModel");
 const { Order } = require("../models/ordersModel");
 const express = require('express');
 const app = express();
 const PDFDocument = require("pdfkit");
+const XLSX = require('xlsx');
 const Coupon = require("../models/couponModel");
 const Offer = require("../models/offerModel");
+// const { default: orders } = require("razorpay/dist/types/orders");
 
 
 // CODES RELATED TO ADMIN LOGIN, LOGOUT AND REL ADMIN
@@ -148,8 +151,8 @@ const loadHome = async (req, res) => {
         .populate("products.productId", "name  quantity");
     }
 
-    const startDate = req.query.startDate || "";
-    const endDate = req.query.endDate || "";
+    let startDate = req.query.startDate || "";
+    let endDate = req.query.endDate || "";
 
     const shippedOrdersToday = await Order.find({
       updatedAt: { $gte: today },
@@ -194,7 +197,7 @@ const loadHome = async (req, res) => {
         },
       },
       { $sort: { totalSold: -1 } },
-      { $limit: 6 },
+      { $limit: 10 },
     ]);
 
     const productIds = topSoldProducts.map((product) => product._id);
@@ -204,6 +207,43 @@ const loadHome = async (req, res) => {
       { _id: { $in: productIds } },
       "name"
     );
+
+    // Top Category
+    const topSoldCategories = await Order.aggregate([
+      { $match: { OrderStatus: "Delivered" } },
+      { $unwind: "$products" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "products.productId",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      { $unwind: "$productDetails" },
+      {
+        $group: {
+          _id: "$productDetails.category",
+          totalSold: { $sum: "$products.quantity" }
+        }
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 6 }
+    ]);
+    
+    const categoryIds = topSoldCategories.map(category => category._id);
+    const soldCatQuantities = topSoldCategories.map(category => category.totalSold);
+    // console.log(topSoldCategories)
+    
+    const topCategoryNames = await Category.find(
+      { _id: { $in: categoryIds } },
+      "categoryName"
+    );
+    // console.log(topCategoryNames)
+
+
+    // Monthly Sales
+
 
     const currentYear = new Date().getFullYear();
     const monthNames = [
@@ -264,6 +304,8 @@ const loadHome = async (req, res) => {
       topProductNames: JSON.stringify(topProductNames),
       soldQuantities: JSON.stringify(soldQuantities),
       monthlySales: JSON.stringify(monthlySales),
+      topCategoryNames: JSON.stringify(topCategoryNames),
+      soldCatQuantities:JSON.stringify(soldCatQuantities)
     });
   } catch (error) {
     console.log(error.message);
@@ -293,118 +335,99 @@ const salesReport = async (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     doc.pipe(res);
 
-    const borderOffset = 28.35; // 1 cm in points
-
-    const x = borderOffset;
-    const y = borderOffset;
-    const width = doc.page.width - 2 * borderOffset;
-    const height = doc.page.height - 2 * borderOffset;
-    doc.lineWidth(1).rect(x, y, width, height).stroke("black");
-
-    doc.on("pageAdded", () => {
-      const x = borderOffset;
-      const y = borderOffset;
-      const width = doc.page.width - 2 * borderOffset;
-      const height = doc.page.height - 2 * borderOffset;
-
-      doc.lineWidth(1).rect(x, y, width, height).stroke("black");
-    });
-
+    // Add the report title
     doc.fontSize(18).text("Sales Report", { align: "center", underline: true });
     doc.moveDown(0.2);
     doc.fontSize(10).text(`Gravity Team`, { align: "center" });
     doc.moveDown(0.2);
-    doc
-      .fontSize(10)
-      .text(
-        `Report covering the period from ${new Date(
-          startDate
-        ).toDateString()} to ${new Date(endDate).toDateString()}.`,
-        { align: "center" }
-      );
+    doc.fontSize(10).text(
+      `Report covering the period from ${new Date(startDate).toDateString()} to ${new Date(endDate).toDateString()}.`,
+      { align: "center" }
+    );
     doc.moveDown(2);
 
-    const ordersCount = orders.length;
-    doc.fontSize(12).text(`Total sales volume: ${ordersCount}`);
-    doc.moveDown(1);
-    const totalRevenue = orders.reduce(
-      (acc, order) => acc + order.totalAmount,
-      0
-    );
-    doc
-      .fontSize(12)
-      .text(
-        `Total revenue generated from these orders: ${totalRevenue.toFixed(2)}`
-      );
-    doc.moveDown(1);
+    // Add summary
+    doc.fontSize(12).text(`Total Orders: ${orders.length}`);
+    const totalRevenue = orders.reduce((acc, order) => acc + order.totalAmount, 0);
+    doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`);
+    doc.moveDown(2);
 
-    // doc.fontSize(12).text('Sales categorized by type');
-    // categories.forEach(category => {
-    //   const categoryProductsCount = orders.reduce((acc, order) => {
-    //     const categoryProducts = order.products.filter(product => product.productId.category === category);
-    //     return acc + (categoryProducts.length > 0 ? categoryProducts.reduce((sum, product) => sum + product.quantity, 0) : 0);
-    //   }, 0);
-    //   doc.fontSize(11).text(`${category}: ${categoryProductsCount}`);
-    // });
+    // Define table headers with specific column widths
+    const addTableHeaders = () => {
+      const startY = doc.y;
+      doc.fontSize(12)
+        .text("No", 50, startY, { width: 50, align: "left" })
+        .text("Order ID", 100, startY, { width: 120, align: "left" })
+        .text("User", 220, startY, { width: 100, align: "left" })
+        .text("Order Date", 290, startY, { width: 100, align: "left" })
+        .text("Total Amount", 400, startY, { width: 100, align: "right" });
 
-    // doc.moveDown(1);
+      doc.moveTo(50, doc.y + 10).lineTo(550, doc.y + 10).stroke(); // Draw a line under headers
+      doc.moveDown(2);
+    };
 
-    const productSales = {};
-    orders.forEach((order) => {
+    const drawRowLines = (yPosition) => {
+      const verticalLineAdjustment = -25; // Move vertical lines slightly to the left
+      const lineHeight = 100; // Increase the height of the vertical lines
+    
+      doc.moveTo(50, yPosition).lineTo(550, yPosition).stroke(); // Horizontal line
+    
+      // Adjusted vertical lines with increased height
+      doc.moveTo(100 + verticalLineAdjustment, yPosition - lineHeight).lineTo(100 + verticalLineAdjustment, yPosition).stroke(); // Vertical line after "No"
+      doc.moveTo(220 + -20, yPosition - lineHeight).lineTo(220 + -20, yPosition).stroke(); // Vertical line after "Order ID"
+      doc.moveTo(290 + verticalLineAdjustment, yPosition - lineHeight).lineTo(290 + verticalLineAdjustment, yPosition).stroke(); // Vertical line after "User"
+      doc.moveTo(400 + verticalLineAdjustment, yPosition - lineHeight).lineTo(400 + verticalLineAdjustment, yPosition).stroke(); // Vertical line after "Order Date"
+    };
+    
+
+    addTableHeaders();
+
+    const maxY = 750; // The y position where you want to start a new page
+
+    orders.forEach((order, index) => {
+      const userFullName = `${order.userId.firstName} ${order.userId.secondName}`;
+      const orderDate = `${order.orderDate.toDateString()} ${order.orderDate.toLocaleTimeString()}`;
+
+      const orderHeightEstimate = 20 + order.products.length * 15 + 10; // Estimate the height needed for the order and its products
+
+      // Check if adding this order will exceed the page limit
+      if (doc.y + orderHeightEstimate > maxY) {
+        doc.addPage(); // Add a new page
+        addTableHeaders(); // Re-add the headers on the new page
+      }
+
+      // Add the order details
+      const currentY = doc.y;
+      doc.fontSize(10)
+        .text(`${index + 1}`, 50, currentY, { width: 50, align: "left" })
+        .text(`${order._id}`, 100, currentY, { width: 100, align: "left" })
+        .text(`${userFullName}`, 220, currentY, { width: 100, align: "left" })
+        .text(orderDate, 290, currentY, { width: 100, align: "left" })
+        .text(`₹${order.totalAmount.toFixed(2)}`, 380, currentY, { width: 100, align: "right" });
+
+      doc.moveDown();
+
+      drawRowLines(doc.y + 22); // Draw horizontal line after each row and vertical lines between columns
+
       order.products.forEach((product) => {
-        const productName = product.productId.name;
-        if (productSales[productName]) {
-          productSales[productName] += product.quantity;
-        } else {
-          productSales[productName] = product.quantity;
+        // Check if the product list will exceed the page limit
+        if (doc.y + 15 > maxY) {
+          doc.addPage(); // Add a new page
+          addTableHeaders(); // Re-add the headers on the new page
+          doc.moveDown(); // Adjust the positioning
         }
-      });
-    });
-    const maxSoldProduct = Object.keys(productSales).reduce((a, b) =>
-      productSales[a] > productSales[b] ? a : b
-    );
-    const maxSoldProductCount = productSales[maxSoldProduct];
 
-    doc
-      .fontSize(12)
-      .text(
-        `Maximum sold product: ${maxSoldProduct} (${maxSoldProductCount} units)`
-      );
-
-    doc.moveDown(3);
-
-    doc.fontSize(16).text("Comprehensive order breakdown", {
-      align: "center",
-      underline: true,
-    });
-    doc.fontSize(12).text(`Detailed order reports`, { align: "center" });
-
-    doc.moveDown(2);
-
-    if (orders && orders.length > 0) {
-      orders.forEach((order, index) => {
-        doc.text(`Order No: ${index + 1}`);
-        doc.text(`Order ID: ${order._id}`);
-        doc.text(`User: ${order.userId.firstName} ${order.userId.secondName}`);
-        doc.text(
-          `Ordered Date: ${order.orderDate.toDateString()} ${order.orderDate.toLocaleTimeString()}`
-        );
-
-        order.products.forEach((product) => {
-          doc.text(`Product: ${product.productId.name}`);
-          doc.text(`Quantity: ${product.quantity}`);
+        // Add the product details
+        doc.fontSize(10).text(`- ${product.productId.name} (${product.quantity} units)`, {
+          indent: 20,
+          align: "left",
         });
-
-        doc.text(`Total Amount: ${order.totalAmount}`);
-        doc.text(`Payment Method: ${order.paymentMethod}`);
-        doc.text(`Payment Status: ${order.paymentStatus}`);
-        doc.text(`Order Status: ${order.OrderStatus}`);
 
         doc.moveDown();
       });
-    } else {
-      doc.text("No orders found for the selected date range.");
-    }
+
+      doc.moveDown(1.5); // Add space after each order
+    });
 
     doc.end();
   } catch (error) {
@@ -414,12 +437,94 @@ const salesReport = async (req, res) => {
 };
 
 
+const salesReportExcel = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Fetch orders within the specified date range
+    const orders = await Order.find({
+      orderDate: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      },
+    })
+      .populate('userId', 'firstName secondName')
+      .populate('products.productId', 'name quantity category');
+
+    // Prepare data for the Excel sheet
+    const data = [];
+
+    // Add headers to the first row of data
+    data.push(['No', 'Order ID', 'User', 'Order Date', 'Total Amount', 'Products','Order Status']);
+
+    orders.forEach((order, index) => {
+      const userFullName = `${order.userId.firstName} ${order.userId.secondName}`;
+      const orderDate = `${order.orderDate.toDateString()} ${order.orderDate.toLocaleTimeString()}`;
+      const products = order.products.map(
+        (product) => `${product.productId.name} (${product.quantity} units)`
+      ).join(', ');
+      const orderStatus = `${order.OrderStatus}`
+
+      // Add each order's data as a new row
+      data.push([
+        index + 1,
+        order._id.toString(),
+        userFullName,
+        orderDate,
+        `₹${order.totalAmount.toFixed(2)}`,
+        products,
+        orderStatus
+      ]);
+    });
+
+    // Create a new workbook and add the data to a sheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
+
+    // Set headers for file download
+    res.setHeader('Content-Disposition', 'attachment; filename="Sales Report.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    // Write the Excel file to the response
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+    res.send(excelBuffer);
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Internal Server Error');
+  }
+};
+
+
+
 // USER MANAGEMENT
 
 const adminUsers = async (req, res) => {
   try {
-    const users = await User.find({ is_admin: 0 });
-    res.render("users", { users: users });
+    // Get page and limit from query parameters, with defaults
+    const page = parseInt(req.query.page) || 1; // Current page, default to 1
+    const limit = parseInt(req.query.limit) || 10; // Items per page, default to 10
+
+    // Calculate the total number of non-admin users
+    const totalUsers = await User.countDocuments({ is_admin: 0 });
+
+    // Calculate the number of pages
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Calculate the number of users to skip based on the current page
+    const skip = (page - 1) * limit;
+
+    // Fetch the users for the current page
+    const users = await User.find({ is_admin: 0 })
+      .skip(skip)
+      .limit(limit);
+    // const users = await User.find({ is_admin: 0 });
+    res.render("users", { 
+      users: users,
+      currentPage: page,
+      totalPages: totalPages,
+     });
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");
@@ -459,19 +564,38 @@ const blockUser = async (req, res) => {
 
 const loadCategory = async (req, res) => {
   try {
-  
-    const categories = await category.find();
-    let successMessage = null;
+    const perPage = 10; // Number of categories per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
 
+    // Get the total count of categories for pagination
+    const totalCategories = await category.countDocuments();
+
+    // Fetch categories with pagination
+    const categories = await category.find()
+      .skip((perPage * page) - perPage) // Skip the previous pages of categories
+      .limit(perPage); // Limit the number of categories per page
+
+    // Fetch offers and categories with offers as before
+    const offers = await Offer.find({ isListed: true });
+    const categoriesWithOffers = await category.find({ offer: { $ne: null } });
+
+    let successMessage = null;
     if (req.query.success) {
       successMessage = "The category has been updated.";
     }
 
-    res.render("category", { categories, successMessage });
+    res.render("category", {
+      categories,
+      successMessage,
+      offers,
+      currentPage: page, // Pass the current page to the view
+      totalPages: Math.ceil(totalCategories / perPage) // Calculate total pages
+    });
   } catch (error) {
     res.render("error", { error });
   }
 };
+
 
 const toggleCategory = async (req, res) => {
   try {
@@ -563,16 +687,28 @@ const saveCategory = async (req, res) => {
 };
 
 // PRODUCTS MANAGEMENT
-
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
-    const offers = await Offer.find();
-    // console.log(products)
+    const perPage = 10; // Number of products per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
+
+    // Get the total count of products for pagination
+    const totalProducts = await Product.countDocuments();
+
+    // Fetch products with pagination
+    const products = await Product.find()
+      .populate('category', 'categoryName')
+      .skip((perPage * page) - perPage) // Skip the previous pages of products
+      .limit(perPage); // Limit the number of products per page
+
+    // Fetch offers as before
+    const offers = await Offer.find({ isListed: true });
 
     res.render("products", {
       Product: products,
       offers: offers,
+      currentPage: page, // Pass the current page to the view
+      totalPages: Math.ceil(totalProducts / perPage) // Calculate total pages
     });
   } catch (error) {
     console.error(error);
@@ -591,7 +727,7 @@ const applyOffer = async (req, res) => {
 
     if (product && selectedOffer) {
       const discountedPrice =
-        product.price - product.price * (selectedOffer.offerDiscount / 100);
+        product.price - Math.round(product.price * (selectedOffer.offerDiscount / 100));
 
       product.offer = selectedOffer._id;
       product.offerPrice = discountedPrice;
@@ -631,14 +767,18 @@ const removeProductOffer = async (req, res) => {
 
 const applyCategoryOffer = async (req, res) => {
   try {
+    
     const { category, offerDiscount } = req.body;
-
+    console.log(offerDiscount)
+    const categoryNew = await Category.find({_id:category})
     const products = await Product.find({ category });
+    console.log(categoryNew[0])
 
+    // console.log(products)
     for (const product of products) {
       if (!product.offer) {
         product.catOfferPrice =
-          product.price - product.price * (offerDiscount / 100);
+          product.price - Math.round(product.price * (offerDiscount / 100));
 
         const offer = await Offer.findOne({ offerDiscount });
         if (offer) {
@@ -648,6 +788,15 @@ const applyCategoryOffer = async (req, res) => {
         await product.save();
       }
     }
+
+    const offer = await Offer.findOne({ offerDiscount });
+    console.log(offer)
+    if (offer) {
+      categoryNew[0].offer = offer._id;
+      categoryNew[0].offerDiscount = offerDiscount;
+    }
+    await categoryNew[0].save()
+    
 
     res
       .status(200)
@@ -661,16 +810,20 @@ const applyCategoryOffer = async (req, res) => {
 
 const removeCategoryOffer = async (req, res) => {
   try {
-    const productId = req.params.productId;
+    const categoryId = req.params.categoryId;
 
-    const product = await Product.findById(productId);
+    const products = await Product.find({category:categoryId});
+    // console.log(products)
 
-    product.catOfferPrice = null;
-    product.offer = null;
-    await product.save();
+    for (const product of products) {
+
+      product.catOfferPrice = null;
+      product.offer = null;
+      await product.save();
+    }
 
     const productsWithSameCategory = await Product.find({
-      category: product.category,
+      category: products.category,
     });
 
     for (const otherProduct of productsWithSameCategory) {
@@ -680,6 +833,14 @@ const removeCategoryOffer = async (req, res) => {
         await otherProduct.save();
       }
     }
+    const category = await Category.find({_id:categoryId});
+    // console.log("1st"+category);
+    if(category){
+      category[0].offer=null;
+      category[0].offerDiscount=null;
+    }
+    await category[0].save();
+    // console.log(category);
 
     res
       .status(200)
@@ -759,7 +920,6 @@ const editProductPage = async (req, res) => {
     const productId = req.params.productId;
 
     const product = await Product.findById(productId);
-
     res.render("editProduct", { product });
   } catch (error) {
     console.error(error);
@@ -799,7 +959,8 @@ const editProduct = async (req, res) => {
 const loadupdateProduct = async (req, res) => {
   try {
     const id = req.params.id;
-    const products = await Product.findOne({ _id: id });
+    const products = await Product.findOne({ _id: id }).populate('category', 'categoryName');
+    // console.log(products.category.categoryName)
     res.render("updateProduct", {
       products,
     });
@@ -811,6 +972,7 @@ const loadupdateProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   const { name, size, quantity, category, description, price } = req.body;
   const id = req.params.id;
+  console.log(category)
 
   try {
     const existingImages =
@@ -881,7 +1043,7 @@ const deleteProductImage = async (req, res) => {
       product.productImage.splice(imageIndex, 1);
 
       await product.save({ validateBeforeSave: false });
-
+      // console.log(product.productImage)
       res.status(200).send("Image deleted successfully");
     } else {
       res.status(404).send("Image not found");
@@ -898,14 +1060,31 @@ const deleteProductImage = async (req, res) => {
 
 const loadOrder = async (req, res) => {
   try {
-    const orders = await Order.find().populate("products.productId").lean().sort({_id:-1});  //converts the Mongoose documents into plain JavaScript objects
+    const perPage = 10; // Number of orders per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
 
-    res.render("ordersPage", { orders });
+    // Get the total count of orders for pagination
+    const totalOrders = await Order.countDocuments();
+
+    // Fetch orders with pagination, populate related products, and sort them
+    const orders = await Order.find()
+      .populate("products.productId")
+      .lean()
+      .sort({ _id: -1 }) // Sort orders by ID in descending order
+      .skip((perPage * page) - perPage) // Skip the previous pages of orders
+      .limit(perPage); // Limit the number of orders per page
+
+    res.render("ordersPage", {
+      orders,
+      currentPage: page, // Pass the current page to the view
+      totalPages: Math.ceil(totalOrders / perPage), // Calculate total pages
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).send("Error fetching orders");
   }
 };
+
 
 
 const manageOrder = async (req, res) => {
@@ -952,7 +1131,8 @@ const updateOrderStatus = async (req, res) => {
     }else{
       await Order.findByIdAndUpdate(orderId, { OrderStatus: status });
     }
-    res.json({ message: "Order status  successfully" });
+    res.status(200).json({ message: "Order status  successfully" });
+    // res.render('/adminOrders',{message: "Order status  successfully" );
   } catch (error) {
     console.log(error.message);
     res.status(500).send("Error updating order status");
@@ -1059,10 +1239,20 @@ const addCoupon = async (req, res) => {
   }
 };
 
-
 const loadCoupon = async (req, res) => {
   try {
-    const coupons = await Coupon.find({});
+    const perPage = 10; // Number of coupons per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
+
+    // Get the total count of coupons for pagination
+    const totalCoupons = await Coupon.countDocuments();
+
+    // Fetch coupons with pagination
+    const coupons = await Coupon.find()
+      .skip((perPage * page) - perPage) // Skip the previous pages of coupons
+      .limit(perPage); // Limit the number of coupons per page
+
+    // Determine if each coupon is still valid
     const currentDate = new Date();
     coupons.forEach((coupon) => {
       coupon.isValid = currentDate <= coupon.validTo;
@@ -1071,12 +1261,19 @@ const loadCoupon = async (req, res) => {
     const successMessage = req.query.success;
     const errorMessage = req.query.error;
 
-    res.render("coupon", { coupons, successMessage, errorMessage });
+    res.render("coupon", {
+      coupons,
+      currentPage: page, // Pass the current page to the view
+      totalPages: Math.ceil(totalCoupons / perPage), // Calculate total pages
+      successMessage,
+      errorMessage,
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).send("Internal Server Error");
   }
 };
+
 
 
 const editCoupon = async (req, res) => {
@@ -1119,12 +1316,13 @@ const deleteCoupon = async (req, res) => {
       return res.status(400).send("Invalid coupon ID");
     }
 
-    const deletedCoupon = await Coupon.findByIdAndDelete(couponId);
-
+    const deletedCoupon = await Coupon.findById(couponId);
+    console.log(deletedCoupon)
     if (!deletedCoupon) {
       return res.status(404).send("Coupon not found");
     }
-
+    deletedCoupon.isListed = !deletedCoupon.isListed;
+    await deletedCoupon.save()
     res.redirect(
       "/admin/coupon?success=" +
       encodeURIComponent("Coupon deleted successfully")
@@ -1141,12 +1339,28 @@ const deleteCoupon = async (req, res) => {
 
 const loadOffers = async (req, res) => {
   try {
-    const offers = await Offer.find();
-    res.render("offers", { offers });
+    const perPage = 10; // Number of offers per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
+
+    // Get the total count of offers for pagination
+    const totalOffers = await Offer.countDocuments();
+
+    // Fetch offers with pagination
+    const offers = await Offer.find()
+      .skip((perPage * page) - perPage) // Skip the previous pages of offers
+      .limit(perPage); // Limit the number of offers per page
+
+    res.render("offers", {
+      offers,
+      currentPage: page, // Pass the current page to the view
+      totalPages: Math.ceil(totalOffers / perPage) // Calculate total pages
+    });
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
+    res.status(500).send("Error fetching offers");
   }
 };
+
 
 
 const addOffer = async (req, res) => {
@@ -1172,20 +1386,50 @@ const addOffer = async (req, res) => {
   }
 };
 
+const editOffer = async (req,res) => {
+  try {
+    const { offerId, offerName, offerDiscount, expiryDate } = req.body;
+
+    const updatedOffer = await Offer.findByIdAndUpdate(
+      offerId,
+    {
+      offerName,
+      offerDiscount,
+      expiryDate, 
+    },{
+      new:true //Return updated offer
+    })
+    res.redirect("/offers?success=Coupon updated successfully");
+  } catch (error) {
+    console.error(error);
+    res.redirect("Failed to update offer");
+  }
+}
+
 
 const removeOffer = async (req, res) => {
   try {
     const offerId = req.params.id;
     // console.log(offerId)
+  
 
     const existingOffer = await Offer.findById(offerId);
     // console.log(existingOffer)
     if (!existingOffer) {
       return res.status(404).send("Offer not found.");
     }
+    existingOffer.isListed = !existingOffer.isListed;
 
-    await existingOffer.deleteOne();
+    await existingOffer.save();
 
+    await Product.updateMany(
+      { offer: offerId },
+      { $unset: { offer: "", offerPrice: "", catOfferPrice:""} }
+    );
+    await category.updateMany(
+      { offer:offerId },
+      { $unset: { offer: "", offerDiscount: ""} }
+    )
     res.redirect("/admin/offers");
   } catch (error) {
     console.error(error.message);
@@ -1203,6 +1447,7 @@ module.exports = {
   logout,
   loadHome,
   salesReport,
+  salesReportExcel,
 
   adminUsers,
   blockUser,
@@ -1238,6 +1483,7 @@ module.exports = {
 
   loadOffers,
   addOffer,
+  editOffer,
   removeOffer,
   applyOffer,
   removeProductOffer,

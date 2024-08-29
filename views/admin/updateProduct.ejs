@@ -56,7 +56,7 @@
                                      class="form-control"
                                      id="exampleSelectCategory"
                                      name="category"
-                                     value="<%= products.category %>"
+                                     value="<%= products.category.categoryName %>"
                                      style="color: white"
                                  />
                              </div>
@@ -170,32 +170,53 @@
    }
    
    function displayNewImages() {
-       const newImagesInput = document.getElementById('newImages');
-       const imageContainer = document.getElementById('image-container');
-   
-       const files = newImagesInput.files;
-   
-       for (let i = 0; i < files.length; i++) {
-           const reader = new FileReader();
-           reader.onload = function (e) {
-               const img = document.createElement('img');
-               img.src = e.target.result;
-               img.classList.add('img-thumbnail', 'clickable-image');
-               img.alt = 'New Product Image';
-               img.width = "100";
-               img.height = "100"
-               img.onclick = function () {
-                   deleteNewImage(this);
-               };
-               
-               // Append the new image to the container
-               imageContainer.appendChild(img);
-           };
-   
-           // Read the file as a data URL
-           reader.readAsDataURL(files[i]);
-       }
-   }
+    const newImagesInput = document.getElementById('newImages');
+    const imageContainer = document.getElementById('image-container');
+    let croppers = [];
+    const files = newImagesInput.files;
+    const errorMessage = document.getElementById('error-message');
+    const submitButton = document.getElementById('submit-button');
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];  // Reference the current file
+
+        if (!file.type.startsWith('image/')) {
+            errorMessage.textContent = 'Only image files are allowed! Refresh to Continue';
+            submitButton.disabled = true;
+            return;  // Exit the loop if the file is not an image
+        } else {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const container = document.createElement("div");
+                container.classList.add("img-container", "mr-2");
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.classList.add('img-thumbnail', 'clickable-image');
+                img.alt = 'New Product Image';
+                container.style.width = "200px";
+                container.style.height = "200px";
+
+                img.onclick = function () {
+                    deleteNewImage(this);
+                };
+
+                container.appendChild(img);
+                imageContainer.appendChild(container);  // Append the container, not the image directly
+
+                const cropper = new Cropper(img, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                });
+
+                croppers.push(cropper);
+            };
+
+            reader.readAsDataURL(file);  // Read the current file
+        }
+    }
+}
    
    function deleteNewImage(imageElement) {
        // Handle the deletion of new images if needed

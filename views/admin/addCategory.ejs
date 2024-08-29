@@ -15,7 +15,8 @@
                         id="categoryForm"
                         class="forms-sample"
                         action="/admin/saveCategory"
-                        method="post">
+                        method="post"
+                        onsubmit="return validateForm()">
                         <div class="form-group">
                            <label for="exampleInputName1">Name</label>
                            <input
@@ -25,6 +26,7 @@
                               placeholder="Name"
                               name="categoryName"
                               style="color: white; /* Set the placeholder color */" />
+                              <div id="nameError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <div class="form-group">
                            <label for="exampleTextarea1">Textarea</label>
@@ -36,6 +38,7 @@
                               style="
                               color: white; /* Set the placeholder color */
                               "></textarea>
+                              <div id="descriptionError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <!-- Submit and cancel buttons -->
                         <button
@@ -44,7 +47,7 @@
                            style="height: 35px">
                         Submit
                         </button>
-                        <button class="btn btn-outline-secondary" style="height: 35px">
+                        <button class="btn btn-outline-secondary" style="height: 35px" onclick="resetForm()">
                         Cancel
                         </button>
                      </form>
@@ -104,6 +107,52 @@
        });
      });
    });
+</script>
+<script>
+   function validateForm() {
+   // Get the form elements
+   const categoryName = document.getElementById('exampleInputName1').value.trim();
+   const description = document.getElementById('exampleTextarea1').value.trim();
+
+   // Error message divs
+   const nameError = document.getElementById('nameError');
+   const descriptionError = document.getElementById('descriptionError');
+
+   // Reset error messages
+   nameError.textContent = '';
+   descriptionError.textContent = '';
+
+   let isValid = true;
+
+   // Validate category name
+   if (categoryName === '') {
+      nameError.textContent = 'Category name is required';
+      isValid = false;
+   } else if (categoryName.length < 3) {
+      nameError.textContent = 'Category name must be at least 3 characters long';
+      isValid = false;
+   }
+
+   // Validate description
+   if (description === '') {
+      descriptionError.textContent = 'Description is required';
+      isValid = false;
+   } else if (description.length < 5) {
+      descriptionError.textContent = 'Description must be at least 5 characters long';
+      isValid = false;
+   }
+
+   // Prevent form submission if not valid
+   return isValid;
+}
+
+// Reset form and error messages
+function resetForm() {
+   document.getElementById('categoryForm').reset();
+   document.getElementById('nameError').textContent = '';
+   document.getElementById('descriptionError').textContent = '';
+}
+
 </script>
 <!-- main-panel ends -->
 <%- include('../layouts/adminFooter') %>

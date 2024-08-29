@@ -28,6 +28,7 @@
                                     <th>Amount</th>
                                     <th>Images</th>
                                     <th>Payment Method</th>
+                                    <th>Order Status</th>
                                     <th>Shipping Address</th>
                                     <th>Details</th>
                                 </tr>
@@ -36,13 +37,13 @@
                                 <% orders.forEach(order => { %>
                                     <tr>
                                         <td class="col-1"><%= order.orderDate.toLocaleDateString() %></td>
-                                        <td class="col-2">
+                                        <td class="col-3">
                                             <% order.products.forEach(product => { %>
                                                 <%= product.productId.name %> x <%= product.quantity %><br>
                                             <% }); %>
                                         </td>
-                                        <td class="col-1"><%= order.totalAmount %></td>
-                                        <td class="col-2">
+                                        <td class="col-1" id="totalAmount"><%= order.totalAmount.toFixed(2) %></td>
+                                        <td class="col-1">
                                             <% order.products.forEach(product => { %>
                                                 <% if (product.productId.productImage && product.productId.productImage.length > 0) { %>
                                                     <img src="data:<%= product.productId.productImage[0].contentType %>;base64,<%= product.productId.productImage[0].data.toString('base64') %>" alt="Product Image" style="width: 50px; height: auto;"><br>
@@ -53,8 +54,15 @@
                                         </td>
                                         
                                         <td class="col-2">
-                                            <%= order.paymentMethod %> <br> 
-                                            <span style="color: red;"><%= order.OrderStatus %></span>
+                                            <%= order.paymentMethod %>
+                                            <% if (order.paymentStatus === 'Failed') { %>
+                                                <button class="btn-danger" onclick="retryPayment('<%= order._id %>')">Retry Payment</button>
+                                                <% } %>
+                                            
+                                        </td>
+                                        <td class="col-2" style="color: <%= order.OrderStatus === 'Cancelled' ? 'red' : 'blue' %>;">
+                                                <%= order.OrderStatus %>
+                                        
                                         </td>
                                         <td class="col-3">
                                             <% if (order.shippingAddress) { %>
@@ -68,7 +76,118 @@
                                 <% }); %>
                             </tbody>
                         </table>
+                        <nav aria-label="Page navigation" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                              <!-- Previous Button -->
+                              <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                  <span aria-hidden="true">&laquo;</span>
+                                </a>
+                              </li>
+                          
+                              <!-- Page Numbers -->
+                              <% for(let i = 1; i <= totalPages; i++) { %>
+                                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                                  <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                </li>
+                              <% } %>
+                          
+                              <!-- Next Button -->
+                              <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                  <span aria-hidden="true">&raquo;</span>
+                                </a>
+                              </li>
+                            </ul>
+                          </nav>
                     </div>
+
+                    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+                    <script>
+                        const totalAmount = document.getElementById('totalAmount').textContent
+                        function retryPayment(orderId) {
+                            const requestOptions = {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    amount: totalAmount,
+                                    
+                                }),
+                            };
+                            // Fetch the order details based on the orderId
+                            fetch(`/fetchOrderDetails/${orderId}`, requestOptions)
+                                .then(response => response.json())
+                                .then(response => {
+                                    console.log(response)
+                                    let order_id = response.orderId;
+                                    let amount = parseFloat(totalAmount); // Amount in paisa
+                                    // let couponCode = orderDetails.couponCode || ''; // Assuming couponCode is part of order details
+                                    // let selectedAddress = orderDetails.shippimAddress; // Assuming selectedAddress is part of order details
+
+                                    const options = {
+                                        key: 'rzp_test_iuTRDa0zNHlIKP',
+                                        amount: amount,
+                                        currency: 'INR',
+                                        name: 'Gravity',
+                                        description: 'Ecommerce Transactions',
+                                        image: '/assets/images/icon.png',
+                                        order_id: order_id, // Use existing order ID
+                                        handler: function (response) {
+                                            // const paymentMethod = 'Online Payment';
+                                            const verificationData = {
+                                                response,
+                                                amount,
+                                                orderId
+                                            };
+
+                                            // Verify payment and update order status
+                                            fetch('/api/payment/reVerify', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json'
+                                                },
+                                                body: JSON.stringify(verificationData)
+                                            })
+                                            .then(response => response.json())
+                                            .then(verificationResponse => {
+                                                if (verificationResponse.success) {
+                                                    // Update the order status to 'Paid' after successful payment
+                                                   
+                                                        window.location.href = '/loadOrderPlaced';
+                                                    
+                                                } else {
+                                                    // Handle unsuccessful payment verification
+                                                    console.error('Payment verification failed');
+                                                }
+                                            })
+                                            .catch(error => {
+                                                console.error(error);
+                                            });
+                                        },
+                                        theme: {
+                                            color: '#000000'
+                                        }
+                                    };
+
+                                    const rzp1 = new Razorpay(options);
+                                    rzp1.on('payment.failed', async function (response) {
+                                        // Update the order status to 'Payment Failed'
+                                        
+                                            alert('Payment failed. Please try again.');
+                                            window.location.href = `/orders`;
+                                    });
+                                        
+                                    rzp1.open();
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching order details:', error);
+                                });
+                        }
+
+                    </script>
                 </div>
             </div>
         </div>

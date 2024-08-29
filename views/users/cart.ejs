@@ -289,7 +289,6 @@ async function updateProductCount(productId, newCount) {
   } catch (error) {
     console.error("Failed to update product count:", error);
   }
-  window.location.reload();
 }
 
 
@@ -301,7 +300,11 @@ async function incrementProduct() {
   const input = this.parentNode.querySelector('.form-control-cart');
   let newCount = parseInt(input.value) + 1;
   if (newCount > 5) {
-    alert('Maximum Quantity Limit Reached');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Oops...',
+      text: 'Maximum Quantity Limit Reached',
+    });
   }else{
     input.value = newCount;
     updateProductCount(productId, newCount);

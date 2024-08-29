@@ -2,9 +2,14 @@
 
 <div class="main-panel">
   <div class="content-wrapper">
-    <div class="card">
+    <div class="card ">
       <div class="card-body">
         <div class="row">
+          <div class="col-lg-12">
+          <h4 class="card-title" style="float: left; width: auto;">COUPONS</h4>
+          <a href="/admin/addCoupon"><button class="btn btn-outline-secondary" type="button" style="float: right; margin-right: 20px;">
+            Add Coupon
+            </button></a>
           <!-- Table for displaying coupons -->
           <table class="table">
             <thead>
@@ -28,10 +33,11 @@
                   <td><%= coupons[i].validFrom.toDateString() %></td>
                   <td><%= coupons[i].validTo.toDateString() %></td>
                   <td>
-                    <span style="color: <%= coupons[i].isValid ? 'green' : 'red' %>;">
-                      <%= coupons[i].isValid ? 'Active' : 'Expired' %>
+                    <span style="color: <%= coupons[i].isListed ? (coupons[i].isValid ? 'green' : 'red') : 'orange' %>;">
+                      <%= !coupons[i].isListed ? 'Unlisted' : (coupons[i].isValid ? 'Active' : 'Expired') %>
                     </span>
                   </td>
+                  
                   
                   <td>
                     <!-- Edit button triggers the modal -->
@@ -42,7 +48,7 @@
                   <td>
                     <form action="/deleteCoupon" method="post">
                       <input type="hidden" name="couponId" value="<%= coupons[i]._id %>">
-                      <button type="submit" class="btn btn-outline-danger">Delete</button>
+                      <button type="submit" class="btn <%= coupons[i].isListed ? 'btn-success' : 'btn-danger' %>"><%= coupons[i].isListed ? 'List' : 'Unlist' %></button>
                     </form>
                   </td>
                 </tr>
@@ -102,7 +108,32 @@
               <% } %>
             </tbody>
           </table>
+          <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+              <!-- Previous Button -->
+              <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+          
+              <!-- Page Numbers -->
+              <% for(let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                </li>
+              <% } %>
+          
+              <!-- Next Button -->
+              <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
+      </div>
       </div>
     </div>
   </div>

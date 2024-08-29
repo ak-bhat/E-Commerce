@@ -115,12 +115,12 @@
                   </a>
                </li>
                <!-- Add Products link -->
-               <li class="nav-item menu-items">
+               <!-- <li class="nav-item menu-items">
                   <a class="nav-link" href="/admin/addProduct">
                   <span class="menu-icon"><i class="mdi mdi-arrow-up-bold"></i></span>
                   <span class="menu-title">Add Products</span>
                   </a>
-               </li>
+               </li> -->
                <!-- Categories link -->
                <li class="nav-item menu-items">
                   <a class="nav-link" href="/admin/category">
@@ -129,10 +129,26 @@
                   </a>
                </li>
                <!-- Add Category link -->
-               <li class="nav-item menu-items">
+               <!-- <li class="nav-item menu-items">
                   <a class="nav-link" href="/admin/addCategory">
                   <span class="menu-icon"><i class="mdi mdi-arrow-up-bold"></i></span>
                   <span class="menu-title">Add Category</span>
+                  </a>
+               </li> -->
+               <li class="nav-item menu-items">
+                  <a class="nav-link" href="/offers">
+                  <span class="menu-icon">
+                  <i class="mdi mdi-arrow-up-bold"></i>
+                  </span>
+                  <span class="menu-title">Offers</span>
+                  </a>
+               </li>
+               <li class="nav-item menu-items">
+                  <a class="nav-link" href="/coupon">
+                  <span class="menu-icon">
+                  <i class="mdi mdi-brightness-7"></i>
+                  </span>
+                  <span class="menu-title">Coupons</span>
                   </a>
                </li>
                <li class="nav-item menu-items">
@@ -235,7 +251,9 @@
                                     <div class="form-group">
                                        <label for="name">Name</label>
                                        <input type="text" class="form-control" id="exampleInputName1" placeholder="Name" name="name" style="color: white" required />
+                                       <div id="productError" style="color: red; margin-top: 10px;"></div>
                                     </div>
+                                    
                                     <!-- Row for size and quantity selection -->
                                     <div class="row">
                                        
@@ -244,7 +262,9 @@
                                           <div class="form-group">
                                              <label for="quantity">Stock</label>
                                              <input type="text" class="form-control" id="quantitySelect" placeholder="Enter Quantity > 0" name="quantity" style="color: white; ::placeholder { color: white; opacity: 1;  }" min="1" required />
+                                             <div id="stockError" style="color: red; margin-top: 10px;"></div>
                                           </div>
+                                          
                                        </div>
                                     </div>
                                     <!-- Category selection dropdown -->
@@ -259,6 +279,7 @@
                                                   <% } %>
                                                 <% }) %>
                                               </select>
+                                              <div id="catError" style="color: red; margin-top: 10px;"></div>
                                           </div>
                                        </div>
                                     </div>
@@ -280,8 +301,7 @@
                                     <div class="form-group">
                                        <label for="price">Product Price</label>
                                        <input type="text" class="form-control" id="productPrice" placeholder="Enter Price" aria-describedby="priceHelp" name="price" style="color: white; ::placeholder { color: white; opacity: 1; }" required/>
-                                       <small id="priceHelp" class="form-text text-muted">Enter the price of the product.</small>
-                                    </div>
+                                       <div id="priceError" style="color: red; margin-top: 10px;"></div>                                    </div>
                                     <!-- Submit and Cancel buttons -->
                                     <button type="submit" class="btn btn-outline-primary me-2" style="height: 35px" id="submitButton">Submit</button>
                                     <button class="btn btn-outline-secondary" style="height: 35px">Cancel</button>
@@ -349,12 +369,14 @@
 
                       if (files.length < 3) {
                         errorMessage.textContent = 'Please upload at least 3 images.';
+                        submitButton.disabled = true;
                         return;
                      }
 
                       if (files.length > 3) {
                         this.value = "";
                         alert("You can upload up to 3 images only.");
+                        submitButton.disabled = true;
                         return;
                       }
 
@@ -365,7 +387,7 @@
                        for (let i = 0; i < files.length; i++) {
                         const file = files[i];
 
-                        if (!file.type.startsWith('image/')) {
+                        if (!file.type.startsWith('image/') ) {
                            errorMessage.textContent = 'Only image files are allowed! Refresh to Continue';
                            submitButton.disabled = true;
                         }else {
@@ -441,10 +463,29 @@
                   });
                 </script>
 
+
+                  <script>
+                     
+
+                     document.getElementById('exampleInputName1').addEventListener('input', function() {
+                     if (this.value.trim() === '') {
+                        const errorMessage = document.getElementById('productError')
+                        errorMessage.textContent='Please enter Product Name';
+                        submitButton.disabled=true;
+                     } else {
+                        this.setCustomValidity('');
+                     }
+                     this.reportValidity(); 
+                     });
+                  </script>
+
                   <script>
                      document.getElementById('quantitySelect').addEventListener('input', function() {
+                        console.log("Hi")
                      if (this.value < 1) {
-                        this.setCustomValidity('Stock must be greater than 0');
+                        const errorMessage = document.getElementById('stockError')
+                        errorMessage.textContent='Stock must be greater than 0';
+                        submitButton.disabled=true;
                      } else {
                         this.setCustomValidity('');
                      }
@@ -455,13 +496,18 @@
                   <script>
                      document.getElementById('productPrice').addEventListener('input', function() {
                      if (this.value < 1) {
-                        this.setCustomValidity('Enter a valid Amount');
+                        // this.setCustomValidity('Enter a valid Amount');
+                        const errorMessage = document.getElementById('priceError')
+                        errorMessage.textContent='Enter a valid Amount';
+                        submitButton.disabled=true;
                      } else {
                         this.setCustomValidity('');
                      }
                      this.reportValidity(); 
                      });
                   </script>
+
+
                 
                <!-- End script -->
             </div>

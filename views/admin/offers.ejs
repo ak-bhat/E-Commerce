@@ -9,19 +9,22 @@
                <div class="card">
                   <div class="card-body">
                      <h4 class="card-title">ADD OFFERS</h4>
-                     <form action="/admin/offers/add" method="POST">
+                     <form action="/admin/offers/add" method="POST" onsubmit="return validateForm()">
                         <!-- Offer details input fields -->
                         <div class="form-group">
                            <label for="offerName">Offer Name</label>
                            <input type="text" class="form-control" id="offerName" name="offerName" placeholder="Enter offer name" required>
+                           <div id="nameError" class="text-danger" style="margin-top: 5px;"></div>
                         </div>
                         <div class="form-group">
-                           <label for="offerDiscount">Offer Discount</label>
-                           <input type="number" class="form-control" id="offerDiscount" name="offerDiscount" placeholder="Enter offer discount" required>
+                           <label for="offerDiscount">Offer Discount %</label>
+                           <input type="number" class="form-control" id="offerDiscount" name="offerDiscount" placeholder="Enter offer discount %" required>
+                           <div id="discountError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <div class="form-group">
                            <label for="expiryDate">Expiry Date:</label>
                            <input type="date" class="form-control" id="expiryDate" name="expiryDate" placeholder="Select expiry date" required>
+                           <div id="dateError" class="text-danger" style="margin-top: 5px"></div>
                         </div>
                         <div class="form-group">
                            <!-- Submit and cancel buttons -->
@@ -42,29 +45,90 @@
                         <th>Discount</th>
                         <th>Expiry Date</th>
                         <th>Status</th>
+                        <th>Action</th>
                         <th>Remove</th>
                      </tr>
                   </thead>
                   <tbody>
                      <% offers.forEach((offer) => {
-                        // Check if the offer is active or expired
-                        const status = offer.expiryDate < new Date() ? 'Expired' : 'Active';
+                        let status;
+                        if (!offer.isListed) {
+                           status = 'Unlisted';
+                        } else {
+                           status = offer.expiryDate < new Date() ? 'Expired' : 'Active';
+                        }
+                        
                         // Apply different styles based on the status
-                        const statusStyle = status === 'Active' ? 'color: green;' : 'color: red;';
-                        %>
+                        const statusStyle = status === 'Active' ? 'color: green;' : 
+                                             status === 'Expired' ? 'color: red;' : 
+                                             'color: orange;';
+                     %>
                      <tr>
                         <!-- Display offer details in table rows -->
                         <td><%= offer.offerName %></td>
                         <td><%= offer.offerDiscount %></td>
-                        <td><%= offer.expiryDate %></td>
+                        <td><%= new Date(offer.expiryDate).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year:'numeric' }) %></td>
                         <td style="<%= statusStyle %>"><%= status %></td>
+                        <td>
+                           <!-- Edit button triggers the modal -->
+                           <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#editModal<%= offer._id %>">
+                             Edit
+                           </button>
+                        </td>
                         <td>
                            <!-- Form for deleting an offer -->
                            <form action="/admin/offers/<%= offer._id %>/delete" method="POST" class="delete-form">
-                              <button type="submit" class="btn btn-danger delete-btn">Delete</button>
+                              <button type="submit"
+                                 class="btn delete-btn <%= offer.isListed ? 'btn-success' : 'btn-danger' %>">
+                                 <%= offer.isListed ? 'List' : 'Unlist' %>
+                              </button>
                            </form>
+                           
                         </td>
                      </tr>
+
+                     <!-- Modal for each coupon -->
+                <div class="modal fade" id="editModal<%= offer._id %>" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">Edit Offer</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body">
+                        <!-- Add a form for editing coupon details -->
+                        <form action="/editOffer" method="post">
+                          <input type="hidden" name="offerId" value="<%= offer._id %>">
+
+                          <!-- Coupon Name -->
+                          <div class="form-group">
+                            <label for="couponName">Offer Name:</label>
+                            <input type="text" class="form-control" name="offerName" value="<%= offer.offerName %>" required>
+                          </div>
+
+                          <!-- Discount Amount -->
+                          <div class="form-group">
+                            <label for="discountAmount">Discount Amount:</label>
+                            <input type="number" class="form-control" name="offerDiscount" value="<%= offer.offerDiscount %>" required>
+                          </div>
+
+
+                          <!-- Valid To -->
+                          <div class="form-group">
+                            <label for="expiryDate">Expiry Date:</label>
+                            <input type="date" class="form-control" name="expiryDate" value="<%= new Date(offer.expiryDate).toISOString().split('T')[0] %>" required>
+                          </div>
+
+
+                          <button type="submit" class="btn btn-outline-primary">Save Changes</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                      <% }); %>
                   </tbody>
                </table>
@@ -73,10 +137,89 @@
                <p>No offers available.</p>
                <% } %>
             </div>
+            <nav aria-label="Page navigation" class="mt-3">
+               <ul class="pagination justify-content-center">
+                 <!-- Previous Button -->
+                 <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                   <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                     <span aria-hidden="true">&laquo;</span>
+                   </a>
+                 </li>
+             
+                 <!-- Page Numbers -->
+                 <% for(let i = 1; i <= totalPages; i++) { %>
+                   <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                     <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                   </li>
+                 <% } %>
+             
+                 <!-- Next Button -->
+                 <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                   <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                     <span aria-hidden="true">&raquo;</span>
+                   </a>
+                 </li>
+               </ul>
+             </nav>
+             
          </div>
       </div>
    </div>
 </div>
+
+<script>
+   function validateForm() {
+       let formIsValid = true;
+
+       // Get form fields
+       const offerName = document.getElementById('offerName');
+       const offerDiscount = document.getElementById('offerDiscount');
+       const expiryDate = document.getElementById('expiryDate');
+
+       // Get error message divs
+       const nameError = document.getElementById('nameError');
+       const discountError = document.getElementById('discountError');
+       const dateError = document.getElementById('dateError');
+
+       // Validate Offer Name
+       if (offerName.value.trim() === '') {
+           nameError.textContent = 'Please enter an offer name';
+           formIsValid = false;
+       } else {
+           nameError.textContent = ''; // Clear error message
+       }
+
+       // Validate Offer Discount
+       if (offerDiscount.value.trim() === '' || offerDiscount.value <= 0) {
+           discountError.textContent = 'Please enter a valid discount percentage';
+           formIsValid = false;
+       } else {
+           discountError.textContent = ''; // Clear error message
+       }
+
+       // Validate Expiry Date
+       if (expiryDate.value.trim() === '') {
+           dateError.textContent = 'Please select an expiry date';
+           formIsValid = false;
+       } else {
+           dateError.textContent = ''; // Clear error message
+       }
+
+       // Prevent form submission if any validation fails
+       return formIsValid;
+   }
+
+   function closeModal() {
+       // Add your logic to close the modal or reset the form if needed
+       document.getElementById('offerName').value = '';
+       document.getElementById('offerDiscount').value = '';
+       document.getElementById('expiryDate').value = '';
+
+       document.getElementById('nameError').textContent = '';
+       document.getElementById('discountError').textContent = '';
+       document.getElementById('dateError').textContent = '';
+   }
+</script>
 <!-- Include the SweetAlert2 library for a nice confirmation dialog -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- JavaScript for handling offer deletion with SweetAlert2 confirmation -->
@@ -91,11 +234,11 @@
          // Display a confirmation dialog using SweetAlert2
          Swal.fire({
            title: 'Are you sure?',
-           text: 'Once deleted, you will not be able to recover this offer!',
+           text: 'Click Yes if you are sure',
            icon: 'warning',
            showCancelButton: true,
            cancelButtonText: 'No, cancel!',
-           confirmButtonText: 'Yes, delete it!',
+           confirmButtonText: 'Yes',
            reverseButtons: true,
            customClass: {
              popup: 'custom-popup-class', // Add a custom class for styling
@@ -111,5 +254,8 @@
        });
      });
    });
+
+
 </script>
+
 <%- include('../layouts/adminFooter') %>

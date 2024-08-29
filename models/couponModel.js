@@ -31,6 +31,10 @@ const couponSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "users",
   },
+  isListed:{
+    type:Boolean,
+    default:true
+  },
 });
 
 const Coupon = mongoose.model("Coupon", couponSchema);

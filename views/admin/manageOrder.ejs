@@ -6,6 +6,12 @@
             <div class="page-header">
                <h3 class="page-title">MANAGE ORDERS</h3>
             </div>
+            <div>
+               <% if (order.OrderStatus === "Return Requested") { %>
+                  <button onclick="updateReturnStatus('<%= order._id %>', 'Approved Request')" style="padding: 10px; width: 200px; color: #fff; background-color: #333;" class="btn btn-outline-primary">Approve Return Request</button>
+                  <button onclick="updateReturnStatus('<%= order._id %>', 'Declined Request')" style="padding: 10px; width: 200px; color: #fff; background-color: #333;" class="btn btn-outline-primary">Decline Request</button>
+                <% } %>                
+            </div>
             <div class="row">
               
                <div class="col-6 grid-margin stretch-card">
@@ -33,8 +39,10 @@
                            <button style="padding: 10px; margin-left: 10px; color: #fff; background-color: #333;" class="btn btn-outline-secondary">Cancel</button>
                         </form>
                      </div>
+
                   </div>
                </div>
+               
                <div class="col-6 grid-margin stretch-card">
                   <div class="card">
                      <div class="card-body">
@@ -180,6 +188,46 @@
        });
    }
 </script>
+
+<script>
+   function updateReturnStatus(orderId, newStatus) {
+       fetch(`/updateOrderStatus`, {
+           method: 'POST',
+           headers: {
+               'Content-Type': 'application/json',
+           },
+           body: JSON.stringify({
+            orderId: orderId,
+            status: newStatus,
+            productId: document.getElementById('productId').value
+           })
+       })
+       .then(response => response.json())
+       .then(response => {
+         // Handle successful status update and show a SweetAlert dialog
+         Swal.fire({
+            icon: 'success',
+            title: "OK",
+            text: "Responded to Return Request!",
+            timer: 3000,
+            showConfirmButton: true
+         }).then((result) => {
+            if (result.isConfirmed) {
+                  // Reload the page only if the user clicks the "OK" button
+                  window.location.reload();
+            }
+         });
+
+         console.log(response);
+      })
+       .catch(error => {
+           console.error('Error:', error);
+       });
+   }
+   </script>
+   
+
+
 <script>
    document.addEventListener('DOMContentLoaded', function() {
      document.querySelectorAll('.update-status').forEach(function(button) {

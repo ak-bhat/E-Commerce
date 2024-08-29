@@ -16,9 +16,6 @@
             </div><!-- End .container -->
         </nav><!-- End .breadcrumb-nav -->
 
-
-
-
         <div class="page-content">
             <div class="checkout">
                 <div class="container">
@@ -29,11 +26,11 @@
                             <select name="couponCode" class="form-control" id="selectedCoupon">
                                 <option value="" disabled selected>Select a coupon</option>
                                 <% activeCoupons.forEach(coupon=> { %>
-                                    <% if (new Date(coupon.validTo)>= new Date()) { %>
-                                        <option value="<%= coupon.code %>" data-coupon="<%=coupon.discocountAmount%>">
+                                    <% if (new Date(coupon.validTo)>= new Date() && coupon.isListed ){ %>
+                                        <option value="<%= coupon.code %>" data-coupon="<%=coupon.discountAmount%>">
                                             <%= coupon.couponName %>
                                                 <%= coupon.discountAmount %> off Offer valid until <%=
-                                                        coupon.validTo.toLocaleDateString() %>
+                                                        coupon.validTo.toLocaleDateString() %> (Minimum Spend <%= coupon.minimumSpend %>)
                                         </option>
                                         <% } %>
                                             <% }); %>
@@ -85,8 +82,10 @@
 
                             </div>
 
-
                             <div>
+                                <button class="btn btn-outline-primary-2" onclick="showForm()">Add Another Address</button>
+                            </div>
+                            <div id="addShippingDetails" style="display: none;">
                                 <form action="/addShippingDetails" method="post">
                                     <h2 class="checkout-title">Add Shipping Details</h2>
 
@@ -190,7 +189,11 @@
                                                         <%= cartItem.product.name %>
                                                     </a>
                                                 </td>
-                                                <% if (cartItem.product.catOfferPrice !==null) { %>
+                                                <td> 
+                                                    <%= (cartItem.count * cartItem.product.price).toFixed(2)
+                                                        %>
+                                                </td>
+                                                <!-- <% if (cartItem.product.catOfferPrice !==null) { %>
                                                     <td>
                                                         <%= (cartItem.product.catOfferPrice * cartItem.count).toFixed(2)
                                                             %>
@@ -200,15 +203,21 @@
                                                             <%= (cartItem.product.offerPrice *
                                                                 cartItem.count).toFixed(2) %>
                                                         </td>
-                                                        <% } else { %>
-                                                            <td>
+                                                        <% } else { %>-->
+                                                            <!-- <td> 
                                                                 <%= (cartItem.count * cartItem.product.price).toFixed(2)
                                                                     %>
-                                                            </td>
-                                                            <% } %>
+                                                            </td> -->
+                                                            <!-- <% } %> -->
                                             </tr>
 
                                             <% }); %>
+                                                <tr style="color: red;">
+                                                    <% if (discountAmount) { %>
+                                                        <td>Offer Discount</td>
+                                                    <td>-<%= discountAmount %></td>
+                                                    <% } %>
+                                                </tr>
                                                 <tr id="couponRow" style="color: red; display: none;">
                                                     <td id="head"></td>
                                                     <td id="discount"></td>
@@ -308,7 +317,12 @@
 
 
 
-
+    <script>
+        function showForm() {
+            const formDiv = document.getElementById('addShippingDetails');
+            formDiv.style.display = 'block'; // Show the form
+        }
+    </script>
 
 
 <script>
@@ -436,9 +450,10 @@
     }else if (selectedPaymentMethod === 'onlinePayment') {
             let orderId;
             let amount;
-            let amt = <%= parseInt(subtotal).toFixed(2) %>;
-            amt = parseInt(amt*100);
-            console.log(amt)
+            let amtNew = parseFloat(<%= subtotal.toFixed(2) %>);
+            // console.log(typeof(amtNew));
+            let amt = Math.round(amtNew*100);
+            // console.log(amt)
             const requestOptions = {
                 method: 'POST',
                 headers: {
@@ -448,11 +463,11 @@
                     amount: amt,
                     couponCode
                 }),
-            };console.log("<%= subtotal.toFixed(2) %>");
+            };
 
             fetch("/createOrder", requestOptions)
                 .then(response => response.json())
-
+                
                 .then(response => {
                     console.log(response)
                     if (response.coupon) {
@@ -465,8 +480,8 @@
                         return;
                     }
                     orderId = response.orderId;
-                    amount = amt;
-                    console.log(amount);
+                    amount = response.totalAmount;;
+                    console.log(typeof(amount));
 
 
 
@@ -495,7 +510,7 @@
                                 },
                                 body: JSON.stringify(verificationData)
                             };
-
+                           
                             fetch('/api/payment/verify', verificationSettings)
                                 .then(response => response.json())
                                 .then(verificationResponse => {
@@ -517,15 +532,30 @@
                     };
 
                     const rzp1 = new Razorpay(options);
-                    rzp1.on('payment.failed', function (response) {
-                        alert(response.error.code);
-                        alert(response.error.description);
-                        alert(response.error.source);
-                        alert(response.error.step);
-                        alert(response.error.reason);
-                        alert(response.error.metadata.order_id);
-                        alert(response.error.metadata.payment_id);
+                    rzp1.on('payment.failed', async function (response) {
+                      await  fetch('/placeOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: amt,
+                        couponCode,
+                        paymentMethod : 'Online Payment',
+                        paymentStatus: 'Failed',
+                        orderStatus: 'Pending Payment Failed',
+                        selectedAddress
+                    })
+                        })
+                        .then(() => {
+                            alert('Payment failed. Please try again.');
+                            window.location.href = `/orders`;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
                     });
+
                     rzp1.open();
                     e.preventDefault();
                     $("button").show();
@@ -535,7 +565,9 @@
                 });
         } else {
             let paymentMethod = 'Cash on Delivery';
-            const response = await fetch('/placeOrder', {
+            let totalAmount = <%- subtotal.toFixed(2) %>;
+            if (totalAmount<1000) {
+                const response = await fetch('/placeOrder', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -558,9 +590,16 @@
                 window.location.href = '/loadOrderPlaced';
             }
 
-        
-
-
+    
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'COD not Available for Orders from ₹1000',
+                    text: 'Please choose another payment method',
+                    timer: 3000
+                });
+            }
+            
 
 
         }
@@ -649,8 +688,17 @@
             });
 
             const coupon = await response.json();
+            const totalAmount = parseFloat($('#sub2').text()) ;
+            console.log(totalAmount)
+            if (coupon.minimumSpend>totalAmount) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Oops...',
+                    text: `Cannot apply Coupon Please pusrchase above ${coupon.minimumSpend}`,
+                });
+            }
 
-            if (coupon.couponCode && coupon.discountAmount) {
+            if (coupon.couponCode && coupon.discountAmount && coupon.minimumSpend<= totalAmount) {
                 $('#couponRow').css('display', 'block');
                 const discountAmount = parseFloat(coupon.discountAmount);
                 const sub = parseFloat($('#sub').text());

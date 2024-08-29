@@ -9,14 +9,11 @@
             <h4 class="card-title" style="float: left;">PRODUCTS</h4>
             <a href="/admin/addProduct"><button class="btn btn-outline-secondary" type="button" style="float: right;">
                Add Product
-               </button></a>
+            </button></a>
             <!-- Button to trigger the category offers modal -->
-            <button class="btn btn-outline-warning" data-toggle="modal" data-target="#categoryOffersModal" style="padding: 10px;">
+            <!-- <button class="btn btn-outline-warning" data-toggle="modal" data-target="#categoryOffersModal" style="float: right; margin-right: 10px;">
                Apply Category Offers
-               </button>
-               <!-- Information about how to remove category offers -->
-               <p style="color: rgb(217, 166, 0); margin-top: 10px;">If the category offer is applied, tap on the icon next to the category to remove the offer.</p>
-               
+               </button> -->
             <!-- Search input and button -->
             <div class="col-md-12 grid-margin stretch-card">
                <div class="card">
@@ -29,6 +26,8 @@
                      Search
                      </button>
                   </div>
+                  <p style="color: rgb(255, 47, 0); margin-top: 10px;">NB: You can only apply either category offer or product offer at a time.</p>
+
                   
                   <!-- Display the products in a table -->
                   <div class="table-responsive">
@@ -65,7 +64,8 @@
                                  </td>
                                  <!-- <td><p><%= product.category %></p></td> -->
                                  <td>
-                                    <%= product.category %>
+                                    <%= product.category.categoryName %>
+                                    
                                     <% if (product.catOfferPrice) { %>
                                     <i class="mdi mdi-star" style="color: red; cursor: pointer;"></i>
                                     <% } %>
@@ -74,8 +74,8 @@
                                  <td>
                                     <!-- Button to remove offers from the product -->
                                     <% if (product.catOfferPrice) { %>
-                                    <button class="btn btn-outline-danger"
-                                    onclick="removeCategoryOffer('<%= product._id %>')">Remove Offer</button>
+                                    <button class="btn btn-danger"
+                                    ><%= Math.round(((product.price- product.catOfferPrice)/product.price)*100) %>% Applied</button>
                                     <% } else { %>
                                     No Offer Applied
                                     <% } %>
@@ -91,11 +91,15 @@
                                     (product.price !== null && product.price !== undefined) ? product.price.toFixed(2) : 'N/A') %>                             
                                  </td>
                                  <td>
+                                    <% if (!product.catOfferPrice) { %>
                                     <!-- Button to apply offers to the product -->
                                     <button class="btn btn-outline-warning" data-toggle="modal"
                                        data-target="#offersModal<%= product._id %>">
-                                    Apply Offers
+                                     Apply Offers
                                     </button>
+                                    <% } else { %>
+                                       Can't Apply Product Offer
+                                    <% } %>
                                     <!-- Modal for applying offers to the product -->
                                     <div class="modal fade" id="offersModal<%= product._id %>" tabindex="-1" role="dialog"
                                        aria-labelledby="offersModalLabel<%= product._id %>" aria-hidden="true">
@@ -129,7 +133,7 @@
                                     <!-- Button to remove offers from the product -->
                                     <% if (product.offerPrice) { %>
                                     <button class="btn btn-outline-danger"
-                                       onclick="removeOffer('<%= product._id %>')">Remove Offer</button>
+                                       onclick="removeOffer('<%= product._id %>')">Remove Offer (<%=Math.round(((product.price- product.offerPrice)/product.price)*100)%>%)</button>
                                     <% } else { %>
                                     No Offer Applied
                                     <% } %>
@@ -159,7 +163,31 @@
                            
                         </tbody>
                      </table>
-
+                     <nav aria-label="Page navigation" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                          <!-- Previous Button -->
+                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                          </li>
+                      
+                          <!-- Page Numbers -->
+                          <% for(let i = 1; i <= totalPages; i++) { %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                              <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                            </li>
+                          <% } %>
+                      
+                          <!-- Next Button -->
+                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                          </li>
+                        </ul>
+                      </nav>
+                      
                      <!-- Script for applying and removing offers -->
                      <script>
                         async function applyOffer(productId) {
@@ -223,15 +251,15 @@
                   <div class="modal-body">
                      <div class="form-group">
                         <label for="categorySelect">Select Category</label>
-                        <select id="categorySelect" class="form-control">
+                        <select id="categorySelect" class="form-control" style="background-color: white;">
                            <% Product.map(product => product.category).filter((value, index, self) => self.indexOf(value) === index).forEach(category => { %>
-                           <option value="<%= category %>"><%= category %></option>
+                           <option value="<%= category._id %>"><%= category.categoryName %></option>
                            <% }) %>
                         </select>
                      </div>
                      <div class="form-group">
                         <label for="offerSelect">Select Offer</label>
-                        <select id="offerSelect" class="form-control">
+                        <select id="offerSelect" class="form-control" style="background-color: white;">
                            <% offers.forEach(offer => { %>
                            <% if (!offer.expiryDate || new Date(offer.expiryDate) > new Date()) { %>
                            <option value="<%= offer.offerDiscount %>">

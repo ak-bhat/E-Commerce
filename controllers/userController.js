@@ -8,6 +8,7 @@ const Cart = require("../models/cartModel");
 const address = require("../models/addressModel");
 
 
+
 // Function to render the signup page
 const userSignupLoad = async (req, res) => {
     try {
@@ -316,8 +317,8 @@ const loadShop = async (req, res) => {
    
       // const categories = filteredCategories.filter(category => category.category !== null);
       // console.log(categories)
-      const name =await Product.distinct('name');
-      const price = await Product.distinct('price');
+      // const name =await Product.distinct('name');
+      // const price = await Product.distinct('price');
   
       // Extract selected category and sort options from query parameters
       const selectedCategory = req.query.category;
@@ -336,6 +337,7 @@ const loadShop = async (req, res) => {
       if (searchQuery) {
         query.name = { $regex: searchQuery, $options: 'i' }; // Case-insensitive search
     }
+    // console.log(query)
 
       // Define sort criteria based on sort option
     let sortCriteria = {};
@@ -375,14 +377,16 @@ const loadShop = async (req, res) => {
   
       // Count total products for pagination
       const totalProducts = await Product.countDocuments(query);
-  
+        // console.log(sortOption)
       // Render the shop page with products, pagination, and categories
       res.render("shop", {
         products,
+        selectedCategory: selectedCategory,
         searchQuery,
         currentPage: page,
         totalPages: Math.ceil(totalProducts / pageSize),
         categories,
+        sortOption
       });
     } catch (error) {
       console.error(error);
@@ -421,18 +425,40 @@ const loadWishlist = async (req, res) => {
   try {
     // Extract user id from session
     const userId = req.session.user_id;
-    // Fetch user's wishlist and populate product details
-    const userWishlist = await Wishlist.findOne({ user: userId }).populate(
-      "products.product"
-    );
+    const perPage = 10; // Number of products per page
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
 
-    // Render the wishlist page with user's wishlist
-    res.render("wishlist", { userWishlist });
+    // Fetch user's wishlist and populate product details
+    const wishlist = await Wishlist.findOne({ user: userId })
+      .populate("products.product")
+      .lean(); // Convert to plain JavaScript objects
+
+    if (!wishlist) {
+      // Handle case where wishlist is not found
+      return res.render("wishlist", { userWishlist: null });
+    }
+
+    const totalProducts = wishlist.products.length; // Total number of products in the wishlist
+    const totalPages = Math.ceil(totalProducts / perPage); // Calculate total pages
+
+    // Slice the products array to get only the products for the current page
+    const paginatedProducts = wishlist.products.slice((page - 1) * perPage, page * perPage);
+
+    // Render the wishlist page with paginated products
+    res.render("wishlist", {
+      userWishlist: {
+        ...wishlist,
+        products: paginatedProducts
+      },
+      currentPage: page, // Pass the current page to the view
+      totalPages // Pass total pages to the view
+    });
   } catch (error) {
     console.log(error.message);
     res.status(500).send("Internal Server Error");
   }
 };
+
 
 const addToWishlist = async (req, res) => {
   try {
@@ -527,8 +553,6 @@ const removeFromWishList = async (req, res) => {
 };
 
 
-
-
 // Export all the defined functions
 module.exports = {
     userSignupLoad,
@@ -545,7 +569,7 @@ module.exports = {
     loadWishlist,
     wishListToCart,
     addToWishlist,
-    removeFromWishList
+    removeFromWishList,
     
 
 };

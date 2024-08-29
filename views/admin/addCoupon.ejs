@@ -5,13 +5,13 @@
     <div class="card">
       <div class="card-body">
         <h4>ADD COUPONS</h4>
-        <form action="/addCoupon" method="post" style="margin-top: 40px;">
+        <form action="/addCoupon" id="couponForm" method="post" style="margin-top: 40px;">
           <div class="row">
             <div class="col-md-6">
               <div class="form-group">
                 <label for="couponCode">Coupon Code</label>
                 <div class="input-group">
-                  <input style=" color: rgb(255, 255, 255);" type="text" class="form-control" id="couponCode" name="couponCode" placeholder="Generated Coupon Code" readonly>
+                  <input style=" color: rgb(255, 255, 255); background-color: black;" type="text" class="form-control" id="couponCode" name="couponCode" placeholder="Generated Coupon Code" readonly>
 
                   <div class="input-group-append">
                     <button class="btn btn-outline-secondary" id="generateCodeBtn" type="button" onclick="generateCouponCode()" style="margin-left: 9px; padding: 10px;">Generate</button>
@@ -24,6 +24,7 @@
               <div class="form-group">
                 <label for="couponName">Coupon Name</label>
                 <input style=" color: rgb(255, 255, 255);" type="text" class="form-control" id="couponName" name="couponName" placeholder="Enter Coupon Name">
+                <div id="couponNameError" class="text-danger" style="display:none;"></div>
               </div>
             </div>
 
@@ -35,6 +36,7 @@
 
                   <div class="input-group-append">
                     <input style=" color: rgb(255, 255, 255);" type="number" class="form-control" id="customDiscountAmount" name="customDiscountAmount" placeholder="Custom Amount">
+                    <div id="discountAmountError" class="text-danger" style="display:none;"></div>
                   </div>
                 </div>
               </div>
@@ -44,6 +46,7 @@
               <div class="form-group">
                 <label for="validFrom">Valid From</label>
                 <input style=" color: rgb(255, 255, 255);" type="date" class="form-control" id="validFrom" name="validFrom">
+                <div id="validFromError" class="text-danger" style="display:none;"></div>
               </div>
             </div>
 
@@ -51,6 +54,7 @@
               <div class="form-group">
                 <label for="validTo">Valid To</label>
                 <input style=" color: rgb(255, 255, 255);" type="date" class="form-control" id="validTo" name="validTo">
+                <div id="validToError" class="text-danger" style="display:none;"></div>
               </div>
             </div>
 
@@ -58,6 +62,7 @@
               <div class="form-group">
                 <label for="minimumSpend">Minimum Spend</label>
                 <input style=" color: rgb(255, 255, 255);" type="number" class="form-control" id="minimumSpend" name="minimumSpend" min="2000" max="10000" step="1000">
+                <div id="minimumSpendError" class="text-danger" style="display:none;"></div>
                 <!-- Adjust min, max, and step attributes based on your requirements -->
               </div>
             </div>
@@ -71,10 +76,83 @@
 
           </div>
         </form>
+        <script>
+          // Set the min attribute to today's date
+          document.addEventListener("DOMContentLoaded", function() {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById("validFrom").setAttribute('min', today);
+          });
+        </script>
+        <script>
+          document.getElementById('couponForm').addEventListener('submit', function(event) {
+            let isValid = true;
+        
+            const couponName = document.getElementById('couponName');
+            const discountAmount = document.getElementById('customDiscountAmount');
+            const validFrom = document.getElementById('validFrom');
+            const validTo = document.getElementById('validTo');
+            const minimumSpend = document.getElementById('minimumSpend');
+        
+            const couponNameError = document.getElementById('couponNameError');
+            const discountAmountError = document.getElementById('discountAmountError');
+            const validFromError = document.getElementById('validFromError');
+            const validToError = document.getElementById('validToError');
+            const minimumSpendError = document.getElementById('minimumSpendError');
+        
+            // Clear previous error messages
+            couponNameError.style.display = 'none';
+            discountAmountError.style.display = 'none';
+            validFromError.style.display = 'none';
+            validToError.style.display = 'none';
+            minimumSpendError.style.display = 'none';
+        
+            if (couponName.value.trim() === '') {
+              isValid = false;
+              couponNameError.textContent = 'Coupon Name is required';
+              couponNameError.style.display = 'block';
+            }
+        
+            if (discountAmount.value.trim() === '' || discountAmount.value <= 0) {
+              isValid = false;
+              discountAmountError.textContent = 'Please enter a valid discount amount';
+              discountAmountError.style.display = 'block';
+            }
+        
+            if (validFrom.value.trim() === '') {
+              isValid = false;
+              validFromError.textContent = 'Valid From date is required';
+              validFromError.style.display = 'block';
+            }
+        
+            if (validTo.value.trim() === '') {
+              isValid = false;
+              validToError.textContent = 'Valid To date is required';
+              validToError.style.display = 'block';
+            }
+        
+            if (minimumSpend.value.trim() === '' || minimumSpend.value < 2000) {
+              isValid = false;
+              minimumSpendError.textContent = 'Minimum Spend should be at least 2000';
+              minimumSpendError.style.display = 'block';
+            }
+        
+            if (!isValid) {
+              event.preventDefault();
+            }
+          });
+        </script>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  // Set the min attribute to today's date
+  document.addEventListener("DOMContentLoaded", function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById("validFrom").setAttribute('min', today);
+  });
+</script>
 
 <script>
   // Function to generate a random code for the placeholder
@@ -130,6 +208,7 @@
     }
   });
 </script>
+
 
 <!-- page-body-wrapper ends -->
 </div>

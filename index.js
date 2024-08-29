@@ -32,6 +32,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -63,6 +64,10 @@ app.use("/updateProduct",adminRoute);
 app.use(blocked.isBlocked);
 
 app.use("/", userRoute);
+
+app.all('*', (req, res) => {
+  res.status(404).send('<h1>404! Page not found</h1>');
+});
 
 
 app.listen(3000, () => {

@@ -61,7 +61,9 @@ const loadCart = async (req, res) => {
     const cart = await Cart.findOne({ user: user_id }).populate(
       "products.product"
     );
-
+    cart.products = cart.products.filter(item => item.product.isListed);
+    await cart.save();
+    
     if (cart) {
       const cartItems = cart.products;
       res.render("cart", { cartItems });

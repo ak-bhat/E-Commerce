@@ -13,6 +13,10 @@
                      <a href="/admin/addCategory"><button class="btn btn-outline-secondary" type="button" style="float: right;">
                         Add Category
                         </button></a>
+                        <!-- Button to trigger the category offers modal -->
+                        <button class="btn btn-outline-warning" data-toggle="modal" data-target="#categoryOffersModal" style="float: right; margin-right: 10px;">
+                           Apply Category Offers
+                        </button>
                      <!-- Search input and button -->
                      <div class="input-group mb-3">
                         <input
@@ -42,6 +46,8 @@
                                  <th style="width: 25%">Category Name</th>
                                  <th style="width: 45%">Description</th>
                                  <th style="width: 15%">Actions</th>
+                                 <th>Category Offer</th>
+                                 <th>Remove Offer</th>
                                  <th style="width: 15%">Edit</th>
                               </tr>
                            </thead>
@@ -69,6 +75,23 @@
                                     </form>
                                  </td>
                                  <td>
+                                    <!-- Button to remove offers from the product -->
+                                    <% if (category.offerDiscount) { %>
+                                       <%= category.offerDiscount %>%
+                                    <% } else { %>
+                                    No Offer Applied
+                                    <% } %>
+                                 </td>
+                                 <td>
+                                    <!-- Button to remove offers from the product -->
+                                    <% if (category.offer) { %>
+                                    <button class="btn btn-danger"
+                                       onclick="removeCategoryOffer('<%= category._id %>')">Remove Offer</button>
+                                    <% } else { %>
+                                    No Offer Applied
+                                    <% } %>
+                                 </td>
+                                 <td>
                                     <!-- Link for editing category -->
                                     <a href="/admin/editCategory/<%= category._id %>">
                                     <i
@@ -86,6 +109,71 @@
                         </div>
                         <% } %>
                      </div>
+                     <!-- Modal for applying category offers -->
+                     <div class="modal fade" id="categoryOffersModal" tabindex="-1" role="dialog" aria-labelledby="categoryOffersModalLabel"
+                        aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                           <div class="modal-content">
+                              <div class="modal-header">
+                                 <h5 class="modal-title" id="categoryOffersModalLabel">Select Category and Offer</h5>
+                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                 <span aria-hidden="true">&times;</span>
+                                 </button>
+                              </div>
+                              <div class="modal-body">
+                                 <div class="form-group">
+                                    <label for="categorySelect">Select Category</label>
+                                    <select id="categorySelect" class="form-control" style="background-color: white;">
+                                       <% categories.forEach(category => { %>
+                                       <option value="<%= category._id %>"><%= category.categoryName %></option>
+                                       <% }) %>
+                                    </select>
+                                 </div>
+                                 <div class="form-group">
+                                    <label for="offerSelect">Select Offer</label>
+                                    <select id="offerSelect" class="form-control" style="background-color: white;">
+                                       <% offers.forEach(offer => { %>
+                                       <% if (!offer.expiryDate || new Date(offer.expiryDate) > new Date()) { %>
+                                       <option value="<%= offer.offerDiscount %>">
+                                          <%= offer.offerName %> - <%= offer.offerDiscount %>% Discount
+                                       </option>
+                                       <% } %>
+                                       <% }) %>
+                                    </select>
+                                 </div>
+                              </div>
+                              <div class="modal-footer">
+                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                 <button type="button" class="btn btn-primary" onclick="applyCategoryOffer()">Apply Category Offer</button>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                     <nav aria-label="Page navigation" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                          <!-- Previous Button -->
+                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                          </li>
+                      
+                          <!-- Page Numbers -->
+                          <% for(let i = 1; i <= totalPages; i++) { %>
+                            <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                              <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                            </li>
+                          <% } %>
+                      
+                          <!-- Next Button -->
+                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                          </li>
+                        </ul>
+                      </nav>
+                      
                      <!-- JavaScript function for searching categories -->
                      <script>
                         function searchCategories() {
@@ -106,6 +194,51 @@
                               }
                             }
                           }
+                        }
+                     </script>
+
+                     <!-- Script for applying category offers -->
+                     <script>
+                        async function applyCategoryOffer() {
+                           const category = document.getElementById('categorySelect').value;
+                           const offerDiscount = document.getElementById('offerSelect').value;
+                        
+                           try {
+                              const response = await fetch('/admin/applyCategoryOffer', {
+                                    method: 'POST',
+                                    headers: {
+                                       'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ category, offerDiscount }),
+                              });
+                        
+                              if (response.ok) {
+                                    location.reload();
+                              } else {
+                                    console.error('Error applying category offer');
+                              }
+                           } catch (error) {
+                              console.error('Error applying category offer', error);
+                           }
+                        }
+                     </script>
+
+                      <!-- Script for removing category offers -->
+                     <script>
+                        async function removeCategoryOffer(categoryId) {
+                           try {
+                              const response = await fetch(`/admin/removeCategoryOffer/${categoryId}`, {
+                                    method: 'POST',
+                              });
+                        
+                              if (response.ok) {
+                                    location.reload();
+                              } else {
+                                    console.error('Error removing category offer');
+                              }
+                           } catch (error) {
+                              console.error('Error removing category offer', error);
+                           }
                         }
                      </script>
                   </div>

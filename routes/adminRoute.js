@@ -36,6 +36,8 @@ adminRoute.get('/logout', auth.isLogin, adminController.logout);
 adminRoute.get('/home', auth.isLogin, adminController.loadHome);
 adminRoute.get('/sales-report', auth.isLogin, adminController.loadHome);
 adminRoute.get('/generate-pdf',auth.isLogin, adminController.salesReport);
+adminRoute.get('/generate-excel',auth.isLogin, adminController.salesReportExcel);
+
 
 adminRoute.get('/users', auth.isLogin, adminController.adminUsers);
 adminRoute.post('/block-user', auth.isLogin, adminController.blockUser);
@@ -48,7 +50,7 @@ adminRoute.get('/addProduct', auth.isLogin, adminController.addProduct);
 adminRoute.post('/addProduct', auth.isLogin, upload.array('productImage',3), adminController.saveProduct);
 
 adminRoute.post('/applyCategoryOffer', adminController.applyCategoryOffer);
-adminRoute.post('/removeCategoryOffer/:productId', adminController.removeCategoryOffer);
+adminRoute.post('/removeCategoryOffer/:categoryId', adminController.removeCategoryOffer);
 
 adminRoute.post('/deleteProduct/:id', auth.isLogin, adminController.deleteProduct);
 adminRoute.get('/updateProduct/:id/Edit', auth.isLogin, adminController.loadupdateProduct);
@@ -85,7 +87,14 @@ adminRoute.post('/deleteCoupon', adminController.deleteCoupon);
 
 adminRoute.get('/offers',adminController.loadOffers);
 adminRoute.post('/offers/add', adminController.addOffer);
+adminRoute.post('/editOffer',adminController.editOffer);
 adminRoute.post('/offers/:id/delete', adminController.removeOffer);
+
+// Redirect to the admin page for any URL under '/admin/somethingelse'
+// adminRoute.get('*', function(req, res) {
+//   res.render('error');
+// });
+
 
 
 module.exports = adminRoute;

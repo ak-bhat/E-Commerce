@@ -81,7 +81,37 @@
 
   
   
-					</table><!-- End .table table-wishlist -->
+					</table>
+
+          <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+              <!-- Previous Button -->
+              <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                  <span aria-hidden="true">&laquo;</span>
+                </a>
+              </li>
+          
+              <!-- Page Numbers -->
+              <% for(let i = 1; i <= totalPages; i++) { %>
+                <li class="page-item <%= i === currentPage ? 'active' : '' %>">
+                  <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                </li>
+              <% } %>
+          
+              <!-- Next Button -->
+              <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                  <span aria-hidden="true">&raquo;</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          
+          
+          
+          
+          <!-- End .table table-wishlist -->
 	            	<div class="wishlist-share">
 	            		<div class="social-icons social-icons-sm mb-2">
 	            			<label class="social-label">Share on:</label>

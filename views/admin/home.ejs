@@ -89,7 +89,7 @@
                               <span class="mdi mdi-arrow-bottom-left icon-item"></span>
                            </div>
                         </div>
-                        <h6 class="text-muted font-weight-normal">No income yet</h6>
+                        <h6 class="text-muted font-weight-normal">Today no income yet</h6>
                      </div>
                   </div>
                </div>
@@ -171,7 +171,7 @@
          <!-- Additional Charts section -->
          <div class="row">
             <!-- Horizontal Bar Chart -->
-            <div class="col-lg-9 grid-margin stretch-card">
+            <div class="col-lg-12 grid-margin stretch-card">
                <div class="card">
                   <div class="card-body">
                      <div class="container">
@@ -182,7 +182,7 @@
             </div>
 
             <!-- Pie Chart -->
-            <div class="col-lg-3 grid-margin stretch-card">
+            <div class="col-lg-6 grid-margin stretch-card">
                <div class="card">
                   <div class="card-body">
                      <div class="container"></div>
@@ -190,7 +190,20 @@
                   </div>
                </div>
             </div>
+
+                     <!-- Pie Chart for Category -->
+                  <div class="col-lg-6 grid-margin stretch-card">
+                     <div class="card">
+                        <div class="card-body">
+                           <div class="container"></div>
+                           <canvas id="pieChartCat" width="400" height="400"></canvas>
+                        </div>
+                     </div>
+                  </div>
+               </div>
          </div>
+
+
 
          <!-- Sales Report section -->
          <div class="card">
@@ -200,16 +213,20 @@
 
                <!-- Sales Report Form -->
                <div class="salesReport">
-                  <form action="/sales-report" method="GET">
+                  <form id="reportForm" action="/sales-report" method="GET">
                      <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <input class="btn btn-outline-secondary" style="margin-right: 5px;" type="date" id="startDate"
-                           name="startDate">
-                        <input class="btn btn-outline-secondary" style="margin-right: 5px;" type="date" id="endDate"
-                           name="endDate">
-                        <button style="padding: 8px;" class="btn btn-outline-success" type="submit">Generate
-                           Report</button>
+                        <select id="timeframe" class="btn btn-outline-secondary" style="margin-right: 5px;">
+                           <option value="custom">Custom Date Range</option>
+                           <option value="weekly">Last Week</option>
+                           <option value="monthly" >Last Month</option>
+                           <option value="yearly">Last Year</option>
+                        </select>
+                        <input class="btn btn-outline-secondary" style="margin-right: 5px;" type="date" id="startDate" name="startDate">
+                        <input class="btn btn-outline-secondary" style="margin-right: 5px;" type="date" id="endDate" name="endDate">
+                        <button style="padding: 8px;" class="btn btn-outline-success" type="submit">Generate Report</button>
                      </div>
                   </form>
+                  <p id="selectedDates" style="margin-top: 20px; color: #ffffff;">Selected Dates: <%= startDate %> to <%= endDate %></p>
 
                   <!-- Order Table -->
                   <div class="table-responsive">
@@ -286,7 +303,10 @@
 
                   <!-- Download button for the sales report -->
                   <a href="/generate-pdf?startDate=<%= startDate %>&endDate=<%= endDate %>" target="_blank" download>
-                     <button class="btn btn-outline-success" style="margin-top: 15px; padding: 10px;">Download</button>
+                     <button class="btn btn-outline-success" style="margin-top: 15px; padding: 10px;">Download PDF</button>
+                  </a>
+                  <a href="/generate-excel?startDate=<%= startDate %>&endDate=<%= endDate %>" target="_blank" download>
+                     <button class="btn btn-outline-success" style="margin-top: 15px; padding: 10px;">Download Excel</button>
                   </a>
                </div>
             </div>
@@ -297,6 +317,50 @@
 
 <!-- JavaScript section for chart rendering -->
 <script>
+
+   // Report Sales
+
+   document.getElementById('timeframe').addEventListener('change', function() {
+   const selectedOption = this.value;
+   const startDateInput = document.getElementById('startDate');
+   const endDateInput = document.getElementById('endDate');
+   
+   if (selectedOption === 'weekly') {
+      // Set start and end dates to the last week
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 7);
+
+      startDateInput.value = startDate.toISOString().split('T')[0];
+      endDateInput.value = endDate.toISOString().split('T')[0];
+   } else if (selectedOption === 'monthly') {
+      // Set start and end dates to the last month
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(endDate.getMonth() - 1);
+
+      startDateInput.value = startDate.toISOString().split('T')[0];
+      endDateInput.value = endDate.toISOString().split('T')[0];
+   } else if (selectedOption === 'yearly') {
+      // Set start and end dates to the last year
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setFullYear(endDate.getFullYear() - 1);
+
+      startDateInput.value = startDate.toISOString().split('T')[0];
+      endDateInput.value = endDate.toISOString().split('T')[0];
+   } else {
+      // Clear dates if 'Custom Date Range' is selected
+      startDateInput.value = '';
+      endDateInput.value = '';
+   }
+});
+
+
+
+
+
+
    // Bar Chart
    document.addEventListener("DOMContentLoaded", function () {
      const ctx = document.getElementById('barChart').getContext('2d');
@@ -395,6 +459,61 @@
        options: options
      });
    });
+
+
+   // Doughnut Chart for Category
+   document.addEventListener("DOMContentLoaded", function () {
+     const ctx = document.getElementById('pieChartCat').getContext('2d');
+     // Parse top product data from the server
+     const topCategoryNames = JSON.parse('<%- topCategoryNames %>');
+     const soldCatQuantities = JSON.parse('<%- soldCatQuantities %>');
+     const categoryNames = topCategoryNames.map(category => category.categoryName);
+     // Data for the doughnut chart
+     const data = {
+       labels: categoryNames,
+       datasets: [{
+         label: 'Top Sold Category',
+         data: soldCatQuantities,
+         backgroundColor: [
+           'rgba(255, 99, 132, 0.8)',
+           'rgba(54, 162, 235, 0.8)',
+           'rgba(75, 192, 192, 0.8)',
+           'rgba(255, 205, 86, 0.8)',
+           'rgba(153, 102, 255, 0.8)',
+           'rgba(255, 159, 64, 0.8)'
+         ],
+         borderColor: [
+           'rgba(255, 99, 132, 1)',
+           'rgba(54, 162, 235, 1)',
+           'rgba(75, 192, 192, 1)',
+           'rgba(255, 205, 86, 1)',
+           'rgba(153, 102, 255, 1)',
+           'rgba(255, 159, 64, 1)'
+         ],
+         borderWidth: 1
+       }]
+     };
+     // Options for the doughnut chart
+     const options = {
+       responsive: true,
+       maintainAspectRatio: false,
+       title: {
+         display: true,
+         text: 'Top Sold Categories'
+       },
+       legend: {
+         display: true,
+         position: 'bottom'
+       }
+     };
+     // Create the doughnut chart
+     const pieChart = new Chart(ctx, {
+       type: 'pie',
+       data: data,
+       options: options
+     });
+   });
+
 
    // Line Chart
    document.addEventListener("DOMContentLoaded", function () {

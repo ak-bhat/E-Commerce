@@ -12,6 +12,8 @@ const orderControl = require("../controllers/orderController");
 const { verifyOrder } = require('../controllers/orderController');
 
 
+
+
 userRoute.use(
     session({
       secret: config.sessionSecret,
@@ -75,6 +77,8 @@ userRoute.post('/createOrder',auth.isLogin,orderControl.createOrder);
 userRoute.post('/addShippingDetails', auth.isLogin, userProControl.addShippingDetails);
 userRoute.get('/loadOrderPlaced',auth.isLogin , orderControl.loadOrderPlaced);
 userRoute.post('/api/payment/verify',auth.isLogin,orderControl.verifyOrder);
+userRoute.post('/api/payment/reVerify',auth.isLogin,orderControl.reVerifyOrder);
+userRoute.post('/paymentFailed',auth.isLogin,orderControl.paymentFailed);
 
 userRoute.post('/getCoupon', orderControl.getCoupon);
 
@@ -87,7 +91,11 @@ userRoute.post('/storeAppliedCoupon', (req, res) => {
 
 userRoute.get('/orders',auth.isLogin,orderControl.loadOrders);
 userRoute.get('/orderDetails/:orderId', auth.isLogin, orderControl.loadOrderDetails);
+userRoute.post('/fetchOrderDetails/:orderId', auth.isLogin, orderControl.fetchOrderDetails);
+userRoute.get('/generate-invoice',auth.isLogin, orderControl.generateInvoice);
 userRoute.post('/cancelOrder/:orderId/:productId', auth.isLogin, orderControl.cancelOrder);
 userRoute.post('/returnProduct/:orderId/:productId', auth.isLogin, orderControl.returnProduct);
+userRoute.post('/requestReturn/:orderId/:productId', auth.isLogin, orderControl.requestReturn);
+
 
 module.exports = userRoute;

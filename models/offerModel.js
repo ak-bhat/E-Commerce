@@ -11,6 +11,10 @@ const offerSchema = new mongoose.Schema({
   expiryDate: {
     type: Date,
   },
+  isListed:{
+    type:Boolean,
+    default:true
+  },
 });
 
 const Offer = mongoose.model("Offer", offerSchema);
