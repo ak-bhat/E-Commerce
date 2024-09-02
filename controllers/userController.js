@@ -553,6 +553,25 @@ const removeFromWishList = async (req, res) => {
 };
 
 
+const loadContact = async (req, res) => {
+  try {
+    // Render the contact page
+    res.render("contact");
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+const loadAbout = async (req, res) => {
+  try {
+    // Render the contact page
+    res.render("about");
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+
 // Export all the defined functions
 module.exports = {
     userSignupLoad,
@@ -570,6 +589,7 @@ module.exports = {
     wishListToCart,
     addToWishlist,
     removeFromWishList,
-    
+    loadAbout,
+    loadContact,
 
 };

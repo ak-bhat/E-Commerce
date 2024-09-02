@@ -98,4 +98,7 @@ userRoute.post('/returnProduct/:orderId/:productId', auth.isLogin, orderControl.
 userRoute.post('/requestReturn/:orderId/:productId', auth.isLogin, orderControl.requestReturn);
 
 
+userRoute.get('/about',userControl.loadAbout);
+userRoute.get('/contact',userControl.loadContact);
+
 module.exports = userRoute;
