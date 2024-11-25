@@ -76,8 +76,8 @@ const insertUser = async (req, res) => {
         res.send('User already exists')
       }else{
             // Generate a random OTP and send it via email
-        const otp = generateOTP();
-        sendMail(email, "OTP Verification", `Your OTP is: ${otp}`);
+        // const otp = generateOTP();
+        // sendMail(email, "OTP Verification", `Your OTP is: ${otp}`);
 
         // Store user details in session for verification
         req.session.userDetails = {
@@ -86,7 +86,7 @@ const insertUser = async (req, res) => {
           email,
           mobile,
           password: await securePassword(password),
-          otp
+          // otp
         };
 
         // Render the OTP verification page with the email
